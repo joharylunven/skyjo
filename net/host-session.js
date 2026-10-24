@@ -95,6 +95,15 @@ export class HostSession extends Emitter {
     return { ok: true };
   }
 
+  /** Revanche : retour au lobby avec les mêmes joueurs (totaux remis à zéro). */
+  rematch() {
+    if (!this.game || this.game.phase !== 'gameOver') return;
+    this.game = null;
+    this.view = null;
+    this._save();
+    this._broadcastLobby();
+  }
+
   /** Coup joué par l'hôte lui-même : même chemin de validation que pour l'invité. */
   act(action) {
     return this._apply(this.me, action);

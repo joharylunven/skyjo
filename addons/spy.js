@@ -44,7 +44,7 @@ export default {
         id: 'play',
         label: 'Jouer l’Espion',
         when: (view) => view.turn === view.me && view.step === 'decide' && view.drawn?.card.kind === 'spy' && view.drawn.from === 'deck',
-        picks: [{ prompt: 'Touchez une carte cachée (chez vous ou chez l’adversaire)', filter: ({ slot }) => slot && !slot.up }],
+        picks: [{ prompt: 'Touchez une carte cachée (à vous ou adverse)', filter: ({ slot }) => slot && !slot.up }],
         build: ([pick]) => ({ type: 'spy:play', target: pick.owner, index: pick.index }),
       },
     ],
