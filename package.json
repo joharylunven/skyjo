@@ -1,0 +1,15 @@
+{
+  "name": "douze",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Jeu de cartes à 2 joueurs en ligne, 100 % statique (PWA + WebRTC).",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "start": "npx --yes serve@14.2.4 -l 8080 .",
+    "icons": "node tools/make-icons.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
