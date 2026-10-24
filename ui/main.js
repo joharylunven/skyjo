@@ -39,7 +39,8 @@ async function boot() {
   app.transportKind = params.get('transport') ?? cfg.network.transport ?? 'peerjs';
   app.createTransport = transportFactory(cfg.network, app.transportKind);
   // Transport local : deux onglets du même navigateur => une session par onglet.
-  app.storage = app.transportKind === 'local' ? createStorage('session') : createStorage('local');
+  const profile = (params.get('profil') ?? '').replace(/[^a-z0-9]/gi, '').slice(0, 12);
+  app.storage = createStorage(app.transportKind === 'local' ? 'session' : 'local', profile);
 
   if (params.has('debug')) globalThis.__douze = app; // inspection depuis la console
   registerServiceWorker();
