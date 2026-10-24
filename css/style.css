@@ -602,16 +602,13 @@ input.code {
   box-shadow: none;
   opacity: 0.6;
 }
-.pile.discard .top {
-  transform: rotate(5deg);
-}
 .pile .card.target {
   box-shadow: 0 0 0 2px rgb(255 255 255 / 0.85), 0 0 0 6px rgb(255 255 255 / 0.12);
 }
 /* carte en main : posée sur la pile d'où elle vient, légèrement soulevée */
 .pile .in-hand {
   z-index: 2;
-  transform: translateY(-8px) scale(1.08);
+  transform: translateY(-8px) scale(1.08) rotate(5deg);
   box-shadow: 0 0 0 2px #fff, 0 12px 22px rgb(0 0 0 / 0.55);
 }
 .pile .in-hand.anim-lift {
@@ -622,7 +619,7 @@ input.code {
 }
 @keyframes liftIn {
   from {
-    transform: rotate(5deg);
+    transform: none;
     box-shadow: none;
   }
 }
@@ -631,7 +628,7 @@ input.code {
     transform: perspective(500px) rotateY(90deg);
   }
   100% {
-    transform: perspective(500px) translateY(-8px) scale(1.08);
+    transform: perspective(500px) translateY(-8px) scale(1.08) rotate(5deg);
   }
 }
 .status {
