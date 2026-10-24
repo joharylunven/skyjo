@@ -1,0 +1,14 @@
+{
+  "name": "Douze",
+  "shortName": "Douze",
+  "tagline": "Le jeu des 12 cartes, à deux, à distance.",
+  "rules": {
+    "cols": 4,
+    "rows": 3,
+    "setupReveals": 2,
+    "endThreshold": 100,
+    "finisherMultiplier": 2,
+    "finalColumnCheck": true
+  },
+  "endThresholdChoices": [50, 75, 100, 150, 200]
+}

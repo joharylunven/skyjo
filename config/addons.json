@@ -1,0 +1,9 @@
+{
+  "available": ["joker", "double", "spy"],
+  "enabled": [],
+  "options": {
+    "joker": { "count": 4, "value": 0 },
+    "double": { "count": 3 },
+    "spy": { "count": 4, "value": 0 }
+  }
+}

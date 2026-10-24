@@ -1,0 +1,25 @@
+{
+  "_doc": "Voir README, section Réseau. iceServers est passé tel quel à RTCPeerConnection.",
+  "transport": "peerjs",
+  "roomPrefix": "douze-jeu-",
+  "peerjsUrl": "https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js",
+  "peerjs": {
+    "debug": 1
+  },
+  "iceServers": [
+    { "urls": "stun:stun.l.google.com:19302" },
+    { "urls": "stun:stun1.l.google.com:19302" }
+  ],
+  "iceTransportPolicy": "all",
+  "_turnExample": [
+    {
+      "urls": ["turn:turn.example.com:3478?transport=udp", "turn:turn.example.com:3478?transport=tcp", "turns:turn.example.com:5349?transport=tcp"],
+      "username": "utilisateur",
+      "credential": "mot-de-passe"
+    }
+  ],
+  "connectTimeoutMs": 15000,
+  "heartbeatMs": 4000,
+  "heartbeatTimeoutMs": 15000,
+  "hostRetry": { "attempts": 20, "delayMs": 3000 }
+}
