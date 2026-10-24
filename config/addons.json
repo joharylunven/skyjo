@@ -1,9 +1,33 @@
 {
-  "available": ["joker", "double", "spy"],
-  "enabled": [],
+  "available": [
+    "etoile",
+    "coup-oeil",
+    "joker",
+    "double",
+    "spy"
+  ],
+  "enabled": [
+    "etoile",
+    "coup-oeil"
+  ],
   "options": {
-    "joker": { "count": 4, "value": 0 },
-    "double": { "count": 3 },
-    "spy": { "count": 4, "value": 0 }
+    "etoile": {
+      "count": 2,
+      "value": 20
+    },
+    "coup-oeil": {
+      "value": 13
+    },
+    "joker": {
+      "count": 4,
+      "value": 0
+    },
+    "double": {
+      "count": 3
+    },
+    "spy": {
+      "count": 4,
+      "value": 0
+    }
   }
 }

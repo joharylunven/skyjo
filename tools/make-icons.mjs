@@ -48,13 +48,12 @@ function sdRoundRect(x, y, cx, cy, bx, by, r, a) {
   return Math.hypot(Math.max(px, 0), Math.max(py, 0)) + Math.min(Math.max(px, py), 0) - r;
 }
 
-const BG1 = hex('#14504f');
-const BG2 = hex('#071d22');
-const WHITE = [255, 255, 255];
+const BG1 = hex('#1a1d23');
+const BG2 = hex('#111318');
 const CARDS = [
-  { color: hex('#4f46e5'), angle: -0.3, dx: -0.2 },
+  { color: hex('#5b8cff'), angle: -0.3, dx: -0.2 },
   { color: hex('#f87171'), angle: 0.3, dx: 0.2 },
-  { color: hex('#facc15'), angle: 0, dx: 0 },
+  { color: hex('#f3e04f'), angle: 0, dx: 0 },
 ];
 
 /** Couleur d'un point (coordonnées normalisées 0..1). `scale` réduit les cartes (zone sûre maskable). */
@@ -68,9 +67,7 @@ function shade(u, v, { rounded, scale }) {
     const by = 0.24 * scale;
     const d = sdRoundRect(u, v, cx, cy, bx, by, 0.035 * scale, card.angle);
     if (d > 0.02 * scale && d < 0.05 * scale) col = mix(col, [0, 0, 0], 0.25 * (1 - (d - 0.02 * scale) / (0.03 * scale)));
-    if (d <= 0) col = d > -0.016 * scale ? WHITE : card.color;
-    // pastille centrale sur la carte du milieu
-    if (card.dx === 0 && Math.hypot(u - cx, v - cy) < 0.07 * scale) col = mix(card.color, [66, 32, 6], 0.85);
+    if (d <= 0) col = card.color;
   }
   return col;
 }

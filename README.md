@@ -9,7 +9,8 @@ Installable comme application (PWA). Nom, cartes, couleurs et règles sont confi
 
 ## Règles
 
-- 150 cartes : -2 ×5, -1 ×10, 0 ×15, puis 1 à 12 ×10. Chaque joueur a 12 cartes cachées
+- 163 cartes : la base (-2 ×5, -1 ×10, 0 ×15, puis 1 à 12 ×10) plus l'extension par défaut :
+  **-4** ×1, **13** ×10 et **Étoile ★** ×2 (voir plus bas). Chaque joueur a 12 cartes cachées
   (4 colonnes × 3 lignes) et en retourne 2 ; la plus grande somme commence (égalité : la plus
   forte carte, puis tirage au sort).
 - À son tour : piocher ou prendre la défausse. Carte de la pioche : l'échanger contre une de ses
@@ -19,6 +20,10 @@ Installable comme application (PWA). Nom, cartes, couleurs et règles sont confi
 - Dès qu'un joueur a tout retourné, l'autre joue un dernier tour. Les cartes restantes sont
   révélées (les colonnes ainsi complétées sont retirées aussi, réglable). Si celui qui a fini n'a
   pas le score **strictement** le plus bas, son score de manche est doublé s'il est positif.
+- **Carte 13** : vaut 13 points, mais quand vous la posez ou la retournez dans votre grille, vous
+  regardez en secret une de vos cartes cachées (elle apparaît en pastille sur le dos, pour vous seul).
+- **Étoile ★** : remplace n'importe quel nombre pour compléter une colonne ; si elle est encore
+  dans votre grille en fin de manche, elle coûte 20 points.
 - La partie s'arrête quand un joueur atteint le seuil (100 par défaut, choisi dans le lobby) ;
   le plus petit total gagne. Chaque manche recommence par le retournement de 2 cartes.
 
@@ -91,18 +96,18 @@ la page, la même salle est rouverte et l'invité se reconnecte tout seul. Déta
   ],
   "palette": [ { "min": 9, "max": 12, "bg": "#f87171", "bg2": "#b91c1c", "fg": "#ffffff" } ],
   "special": { "joker": { "label": "★", "emoji": "🃏", "bg": "#c084fc" } },
-  "back": { "pattern": "waves", "primary": "#1e293b", "secondary": "#334155", "accent": "#f59e0b", "label": "12" }
+  "back": { "pattern": "none", "primary": "#4a4e57", "label": "" }
 }
 ```
 
 - `deck` : répartition du paquet (`value`, `count`) et apparence de chaque valeur : `label`
   (texte affiché), `emoji` ou `image` (chemin relatif à la racine du site) facultatifs, et
   couleurs `bg`/`bg2`/`fg` qui remplacent celles de la palette.
-- `palette` : couleurs par plage de valeurs (dégradé `bg` → `bg2`, texte `fg`).
+- `palette` : couleur de fond `bg` et de texte `fg` par plage de valeurs (cartes plates).
 - `special` : apparence des cartes ajoutées par les add-ons (par `kind`) ; prioritaire sur celle
   déclarée par l'add-on.
-- `back` : dos des cartes, motif SVG généré (`waves`, `dots`, `stripes`, `grid`), couleurs et
-  texte central.
+- `back` : dos des cartes, gris uni par défaut ; motif SVG facultatif (`waves`, `dots`,
+  `stripes`, `grid`), couleurs et texte central.
 
 Le paquet doit contenir au moins 25 cartes (2 × 12 + 1 défausse).
 
@@ -130,7 +135,11 @@ export default {
 Ajoutez `"bombe"` dans `available` de `config/addons.json` (et dans `enabled` pour le cocher par
 défaut) et dans `PRECACHE` de `sw.js`. L'API complète est dans [docs/ADDONS.md](docs/ADDONS.md).
 
-Les 3 exemples fournis sont désactivés par défaut ; l'hôte les coche dans le lobby :
+Deux add-ons sont **activés par défaut** : `etoile` (Étoile ★, joker de colonne à 20 points ;
+nombre réglable dans `options`) et `coup-oeil` (pouvoir des cartes 13). Les cartes -4 et 13
+elles-mêmes sont de simples lignes de `config/cards.json`.
+
+Les 3 exemples suivants sont désactivés par défaut ; l'hôte les coche dans le lobby :
 
 - **Joker** : vaut 0 ; un Joker visible peut, une fois par tour et avant de piocher, échanger sa
   place avec n'importe laquelle de vos cartes.

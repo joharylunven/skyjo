@@ -3,7 +3,7 @@
 // secours ; cache d'abord pour la bibliothèque PeerJS (URL versionnée, donc immuable).
 // Pensez à incrémenter VERSION si vous voulez forcer le rafraîchissement du cache.
 
-const VERSION = 'douze-v1';
+const VERSION = 'douze-v2';
 
 const PRECACHE = [
   './',
@@ -43,6 +43,8 @@ const PRECACHE = [
   './ui/format.js',
   './ui/screens.js',
   './ui/board.js',
+  './addons/etoile.js',
+  './addons/coup-oeil.js',
   './addons/joker.js',
   './addons/double.js',
   './addons/spy.js',

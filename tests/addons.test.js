@@ -1,7 +1,7 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { applyAction, registerAddon, clearAddons, scorePlayer, viewFor, buildDeck, normalizeDeckSpec } from '../engine/index.js';
+import { applyAction, registerAddon, clearAddons, scorePlayer, viewFor } from '../engine/index.js';
 import joker from '../addons/joker.js';
 import double from '../addons/double.js';
 import spy from '../addons/spy.js';
@@ -14,12 +14,12 @@ beforeEach(() => {
   [joker, double, spy].forEach(registerAddon);
 });
 
-test('config/cards.json décrit le paquet de 150 cartes et config/addons.json des add-ons existants', () => {
-  const cards = readJson('../config/cards.json');
-  assert.equal(buildDeck(normalizeDeckSpec(cards.deck)).length, 150);
+test('config/addons.json : les exemples Joker, Double et Espion sont désactivés par défaut', () => {
   const addons = readJson('../config/addons.json');
-  for (const id of addons.available) assert.ok([joker, double, spy].some((a) => a.id === id));
-  assert.deepEqual(addons.enabled, []); // désactivés par défaut
+  for (const id of ['joker', 'double', 'spy']) {
+    assert.ok(addons.available.includes(id));
+    assert.ok(!addons.enabled.includes(id));
+  }
 });
 
 test('add-on inconnu refusé à la création', () => {

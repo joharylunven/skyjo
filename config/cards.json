@@ -1,36 +1,154 @@
 {
   "deck": [
-    { "value": -2, "count": 5, "label": "-2", "emoji": "❄️" },
-    { "value": -1, "count": 10, "label": "-1", "emoji": "💧" },
-    { "value": 0, "count": 15, "label": "0", "emoji": "🌀" },
-    { "value": 1, "count": 10, "label": "1" },
-    { "value": 2, "count": 10, "label": "2" },
-    { "value": 3, "count": 10, "label": "3" },
-    { "value": 4, "count": 10, "label": "4" },
-    { "value": 5, "count": 10, "label": "5" },
-    { "value": 6, "count": 10, "label": "6" },
-    { "value": 7, "count": 10, "label": "7" },
-    { "value": 8, "count": 10, "label": "8" },
-    { "value": 9, "count": 10, "label": "9" },
-    { "value": 10, "count": 10, "label": "10" },
-    { "value": 11, "count": 10, "label": "11" },
-    { "value": 12, "count": 10, "label": "12", "emoji": "🔥" }
+    {
+      "value": -4,
+      "count": 1,
+      "label": "-4"
+    },
+    {
+      "value": -2,
+      "count": 5,
+      "label": "-2"
+    },
+    {
+      "value": -1,
+      "count": 10,
+      "label": "-1"
+    },
+    {
+      "value": 0,
+      "count": 15,
+      "label": "0"
+    },
+    {
+      "value": 1,
+      "count": 10,
+      "label": "1"
+    },
+    {
+      "value": 2,
+      "count": 10,
+      "label": "2"
+    },
+    {
+      "value": 3,
+      "count": 10,
+      "label": "3"
+    },
+    {
+      "value": 4,
+      "count": 10,
+      "label": "4"
+    },
+    {
+      "value": 5,
+      "count": 10,
+      "label": "5"
+    },
+    {
+      "value": 6,
+      "count": 10,
+      "label": "6"
+    },
+    {
+      "value": 7,
+      "count": 10,
+      "label": "7"
+    },
+    {
+      "value": 8,
+      "count": 10,
+      "label": "8"
+    },
+    {
+      "value": 9,
+      "count": 10,
+      "label": "9"
+    },
+    {
+      "value": 10,
+      "count": 10,
+      "label": "10"
+    },
+    {
+      "value": 11,
+      "count": 10,
+      "label": "11"
+    },
+    {
+      "value": 12,
+      "count": 10,
+      "label": "12"
+    },
+    {
+      "value": 13,
+      "count": 10,
+      "label": "13"
+    }
   ],
   "palette": [
-    { "min": -2, "max": -1, "bg": "#4f46e5", "bg2": "#312e81", "fg": "#ffffff" },
-    { "min": 0, "max": 0, "bg": "#38bdf8", "bg2": "#0369a1", "fg": "#ffffff" },
-    { "min": 1, "max": 4, "bg": "#4ade80", "bg2": "#15803d", "fg": "#ffffff" },
-    { "min": 5, "max": 8, "bg": "#facc15", "bg2": "#ca8a04", "fg": "#422006" },
-    { "min": 9, "max": 12, "bg": "#f87171", "bg2": "#b91c1c", "fg": "#ffffff" }
+    {
+      "min": -4,
+      "max": -3,
+      "bg": "#3f5bff",
+      "fg": "#ffffff"
+    },
+    {
+      "min": -2,
+      "max": -1,
+      "bg": "#5b8cff",
+      "fg": "#14161b"
+    },
+    {
+      "min": 0,
+      "max": 0,
+      "bg": "#93bcff",
+      "fg": "#14161b"
+    },
+    {
+      "min": 1,
+      "max": 4,
+      "bg": "#6fd36f",
+      "fg": "#14161b"
+    },
+    {
+      "min": 5,
+      "max": 8,
+      "bg": "#f3e04f",
+      "fg": "#14161b"
+    },
+    {
+      "min": 9,
+      "max": 12,
+      "bg": "#f26b6b",
+      "fg": "#14161b"
+    },
+    {
+      "min": 13,
+      "max": 13,
+      "bg": "#d65ad8",
+      "fg": "#14161b"
+    }
   ],
   "special": {
-    "joker": { "label": "★", "emoji": "🃏", "bg": "#c084fc", "bg2": "#6b21a8", "fg": "#ffffff" }
+    "star": {
+      "label": "★",
+      "name": "Étoile",
+      "bg": "#ffd84d",
+      "fg": "#1a1a1a"
+    },
+    "joker": {
+      "label": "J",
+      "name": "Joker",
+      "bg": "#c9a7ff",
+      "fg": "#14161b"
+    }
   },
   "back": {
-    "pattern": "waves",
-    "primary": "#1e293b",
-    "secondary": "#334155",
-    "accent": "#f59e0b",
-    "label": "12"
+    "pattern": "none",
+    "primary": "#4a4e57",
+    "secondary": "#555a64",
+    "accent": "#4a4e57",
+    "label": ""
   }
 }

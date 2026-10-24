@@ -17,7 +17,7 @@ export default {
   onReveal(state, ctx) {},    // après un retournement : ctx.player, ctx.index, ctx.card
   onSwap(state, ctx) {},      // après un échange : ctx.player, ctx.index, ctx.card, ctx.old, ctx.source
   scoreCard(card, ctx) {},    // renvoie un nombre pour remplacer la valeur, ou undefined
-  matchKey(card, ctx) {},     // clé de comparaison pour le retrait des colonnes (undefined = défaut)
+  matchKey(card, ctx) {},     // clé pour le retrait des colonnes (undefined = défaut, '*' = joker, null = jamais)
   onRoundEnd(state, ctx) {},  // ctx.result = { raw, scores, doubled, finisher } ; modifiable
   viewState(store, ctx) {},   // partie publique de ctx.store envoyée aux joueurs
 
@@ -38,6 +38,7 @@ export default {
     faces: { monType: { label: '?', emoji: '🎲', bg: '#888', bg2: '#333', fg: '#fff' } },
     actions: [ /* boutons, voir plus bas */ ],
     formatLog(entry, name, label) { return null },   // texte de l'historique pour vos entrées
+    decorate({ view, owner, index, slot }) { return null }, // { badge: carte } : pastille sur un emplacement
   },
 };
 ```
@@ -96,6 +97,8 @@ ui: {
 ```
 
 `picks` peut être vide : le bouton envoie alors directement `build([])`.
+Avec `auto: true`, il n'y a pas de bouton : le mode sélection s'ouvre tout seul dès que `when(view)`
+est vrai (c'est ainsi que fonctionne le coup d'œil des cartes 13).
 
 ## Activer un add-on
 
@@ -107,7 +110,17 @@ ui: {
 
 Dans le lobby, l'hôte coche les add-ons de la partie ; l'invité reçoit la liste et charge les mêmes modules.
 
-## Les exemples fournis
+## Les add-ons fournis
+
+Activés par défaut :
+
+- **etoile** : cartes ★ valant 20 ; `matchKey` renvoie `'*'`, donc une Étoile visible complète
+  n'importe quelle colonne.
+- **coup-oeil** : poser ou retourner un 13 donne un coup d'œil secret (`onSwap`/`onReveal` +
+  action `coup-oeil:look` jouable hors de son tour). `viewState` ne renvoie à chaque joueur que
+  ses propres informations : exemple de donnée secrète par joueur.
+
+Exemples désactivés par défaut :
 
 - **joker** : cartes valant 0 ; un Joker visible peut une fois par tour, avant de piocher, échanger
   sa place avec n'importe quelle autre carte de sa grille (action `joker:move`, sans fin de tour).

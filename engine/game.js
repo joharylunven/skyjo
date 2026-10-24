@@ -299,13 +299,16 @@ function checkColumns(s, p, ctx) {
     const idx = columnIndices(c, cols, rows);
     const slots = idx.map((i) => grid[i]);
     if (slots.some((x) => !x || !x.up)) continue;
+    // Une clé '*' (renvoyée par un add-on via matchKey) est un joker : elle complète n'importe quelle colonne.
     const keys = slots.map((x) => matchKey(s, x.card, ctx));
-    if (keys[0] === null || !keys.every((k) => k === keys[0])) continue;
+    if (keys.includes(null)) continue;
+    const fixed = keys.filter((k) => k !== '*');
+    if (!fixed.every((k) => k === fixed[0])) continue;
     const cards = slots.map((x) => x.card);
     for (const i of idx) grid[i] = null;
     s.discard.push(...cards);
     ctx.emit({ type: 'column', player: p, col: c, indices: idx, cards });
-    pushLog(s, { t: 'column', p, card: cards[0] });
+    pushLog(s, { t: 'column', p, card: cards.find((c) => matchKey(s, c, ctx) !== '*') ?? cards[0] });
   }
 }
 

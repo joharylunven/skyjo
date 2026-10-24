@@ -6,7 +6,7 @@ import { initCards } from './cards.js';
 import { h, clear, toast } from './dom.js';
 import { createStorage } from './storage.js';
 import { homeScreen, lobbyScreen, rulesDialog } from './screens.js';
-import { boardScreen, animate } from './board.js';
+import { boardScreen, animate, addonActions } from './board.js';
 
 const SESSION_MAX_AGE = 24 * 3600 * 1000;
 const root = document.getElementById('app');
@@ -255,6 +255,10 @@ function render(events = null) {
     document.body.dataset.screen = inGame ? 'game' : 'lobby';
     nodes.push(banner(session));
     if (inGame) {
+      // Actions d'add-on « auto » (ex. coup d'œil du 13) : le mode sélection s'ouvre tout seul.
+      const auto = addonActions(view, cfg.modules).find((d) => d.auto);
+      if (auto && !app.ui.picking && !app.ui.pending) app.ui.picking = { def: auto, picks: [] };
+      if (app.ui.picking?.def.auto && !auto) app.ui.picking = null;
       nodes.push(
         ...boardScreen({
           view,

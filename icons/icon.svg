@@ -1,10 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <defs><radialGradient id="g" cx="50%" cy="35%" r="75%"><stop offset="0" stop-color="#14504f"/><stop offset="1" stop-color="#071d22"/></radialGradient></defs>
-  <rect width="100" height="100" rx="22" fill="url(#g)"/>
-  <g stroke="#fff" stroke-width="1.6">
-    <rect x="13" y="34" width="34" height="48" rx="3.5" fill="#4f46e5" transform="rotate(-17 30 58)"/>
-    <rect x="53" y="34" width="34" height="48" rx="3.5" fill="#f87171" transform="rotate(17 70 58)"/>
-    <rect x="33" y="29" width="34" height="48" rx="3.5" fill="#facc15"/>
-  </g>
-  <circle cx="50" cy="53" r="7" fill="#422006"/>
+  <rect width="100" height="100" rx="22" fill="#15171c"/>
+  <rect x="13" y="36" width="34" height="44" rx="5" fill="#5b8cff" transform="rotate(-17 30 58)"/>
+  <rect x="53" y="36" width="34" height="44" rx="5" fill="#f26b6b" transform="rotate(17 70 58)"/>
+  <rect x="33" y="30" width="34" height="44" rx="5" fill="#f3e04f"/>
 </svg>

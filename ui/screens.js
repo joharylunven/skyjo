@@ -3,9 +3,9 @@
 import { h } from './dom.js';
 
 const LOGO = `<svg viewBox="0 0 120 90" aria-hidden="true">
-  <g transform="rotate(-14 60 80)"><rect x="10" y="12" width="40" height="58" rx="6" fill="#4f46e5"/><text x="27" y="48" font-size="22" font-weight="800" text-anchor="middle" fill="#fff">-2</text></g>
-  <g transform="rotate(14 60 80)"><rect x="70" y="12" width="40" height="58" rx="6" fill="#f87171"/><text x="94" y="48" font-size="22" font-weight="800" text-anchor="middle" fill="#fff">12</text></g>
-  <g><rect x="40" y="4" width="40" height="58" rx="6" fill="#facc15"/><text x="60" y="41" font-size="24" font-weight="800" text-anchor="middle" fill="#422006">5</text></g>
+  <g transform="rotate(-14 60 80)"><rect x="10" y="14" width="40" height="50" rx="7" fill="#5b8cff"/><text x="30" y="47" font-size="20" font-weight="500" text-anchor="middle" fill="#14161b">-2</text></g>
+  <g transform="rotate(14 60 80)"><rect x="70" y="14" width="40" height="50" rx="7" fill="#f26b6b"/><text x="90" y="47" font-size="20" font-weight="500" text-anchor="middle" fill="#14161b">12</text></g>
+  <g><rect x="40" y="6" width="40" height="50" rx="7" fill="#f3e04f"/><text x="60" y="39" font-size="22" font-weight="500" text-anchor="middle" fill="#14161b">5</text></g>
 </svg>`;
 
 export function homeScreen({ cfg, name, joinCode, saved, onCreate, onJoin, onResume, onForget, onRules }) {
@@ -145,6 +145,8 @@ export function rulesDialog({ cfg, onClose }) {
         'ul.rules',
         {},
         h('li', {}, 'Chaque joueur a 12 cartes face cachée (4 colonnes × 3 lignes) et en retourne 2. La plus grande somme commence.'),
+        h('li', {}, 'Cartes de -4 à 13. Une carte 13 posée ou retournée dans votre grille vous laisse regarder en secret une de vos cartes cachées.'),
+        h('li', {}, 'L’Étoile ★ remplace n’importe quel nombre pour compléter une colonne, mais coûte 20 points si elle reste dans votre grille.'),
         h('li', {}, 'À votre tour : piochez une carte ou prenez celle de la défausse.'),
         h('li', {}, 'Carte de la pioche : échangez-la avec une de vos cartes, ou défaussez-la et retournez une carte cachée.'),
         h('li', {}, 'Carte de la défausse : vous devez l’échanger avec une de vos cartes.'),

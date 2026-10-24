@@ -10,11 +10,12 @@ export function initCards(cardsConfig, modules) {
   MODULES = modules;
   const back = cardsConfig.back ?? {};
   const root = document.documentElement.style;
-  root.setProperty('--back-1', back.primary ?? '#1e293b');
-  root.setProperty('--back-2', back.secondary ?? '#334155');
-  root.setProperty('--back-accent', back.accent ?? '#f59e0b');
-  root.setProperty('--back-img', `url("${backSvg(back)}")`);
+  root.setProperty('--back-1', back.primary ?? '#4a4e57');
+  root.setProperty('--back-2', back.secondary ?? back.primary ?? '#4a4e57');
+  root.setProperty('--back-accent', back.accent ?? back.primary ?? '#4a4e57');
+  root.setProperty('--back-img', back.pattern && back.pattern !== 'none' ? `url("${backSvg(back)}")` : 'none');
   root.setProperty('--back-label', JSON.stringify(String(back.label ?? '')));
+  root.setProperty('--back-label-display', back.label ? 'grid' : 'none');
 }
 
 function backSvg({ pattern = 'waves', secondary = '#334155', accent = '#f59e0b' }) {
@@ -52,25 +53,30 @@ export function cardLabel(card) {
 
 const imgUrl = (path) => new URL(`../${path}`, import.meta.url).href;
 
+/** Pastille de couleur d'une carte (ex. carte regardée en secret). */
+export function chipEl(card) {
+  const a = appearance(card);
+  return h('span.chip', { style: { '--bg': a.bg, '--fg': a.fg } }, a.label);
+}
+
 /** Élément DOM d'une carte. slot : null (vide) | { up:false } | { up:true, card } ; ou une carte. */
 export function cardEl(slotOrCard, extra = {}) {
   const slot = slotOrCard && 'up' in slotOrCard ? slotOrCard : slotOrCard ? { up: true, card: slotOrCard } : null;
-  const { class: cls = '', ...props } = extra;
+  const { class: cls = '', badge = null, ...props } = extra;
   if (!slot) return h('div.card.empty', { class: cls, ...props });
-  if (!slot.up) return h('div.card.back', { class: cls, 'aria-label': 'Carte cachée', ...props });
+  if (!slot.up) return h('div.card.back', { class: cls, 'aria-label': 'Carte cachée', ...props }, badge ? chipEl(badge) : null);
   const a = appearance(slot.card);
   const long = String(a.label).length > 2;
   return h(
     'div.card.face',
     {
       class: `${cls} kind-${slot.card.kind}${long ? ' long' : ''}`,
-      style: { '--bg': a.bg, '--bg2': a.bg2 ?? a.bg, '--fg': a.fg },
+      style: { '--bg': a.bg, '--fg': a.fg },
       'aria-label': `Carte ${a.name}`,
       ...props,
     },
-    h('span.corner.tl', {}, a.label),
-    a.image ? h('img.art', { src: imgUrl(a.image), alt: '' }) : a.emoji ? h('span.emoji', {}, a.emoji) : null,
+    a.image ? h('img.art', { src: imgUrl(a.image), alt: '' }) : null,
     h('span.value', {}, a.label),
-    h('span.corner.br', {}, a.label),
+    a.emoji ? h('span.emoji', {}, a.emoji) : null,
   );
 }
