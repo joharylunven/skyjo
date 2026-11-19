@@ -2,14 +2,14 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { applyAction, registerAddon, clearAddons, scorePlayer, viewFor, buildDeck, normalizeDeckSpec } from '../engine/index.js';
-import etoile from '../addons/etoile.js';
-import coupOeil from '../addons/coup-oeil.js';
+import { applyAction, registerAddon, clearAddons, scorePlayer, viewFor, buildDeck, normalizeDeckSpec } from '../public/skyjojo/engine/index.js';
+import etoile from '../public/skyjojo/addons/etoile.js';
+import coupOeil from '../public/skyjojo/addons/coup-oeil.js';
 import { newGame, act, setGrid, toPlay } from './helpers.js';
 
 const readJson = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url)));
-const cards = readJson('../config/cards.json');
-const addonsCfg = readJson('../config/addons.json');
+const cards = readJson('../public/skyjojo/config/cards.json');
+const addonsCfg = readJson('../public/skyjojo/config/addons.json');
 const STAR = { kind: 'star', value: 20 };
 
 beforeEach(() => {

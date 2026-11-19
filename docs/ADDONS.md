@@ -1,6 +1,6 @@
 # API des add-ons
 
-Un add-on est un module ES placé dans `addons/<id>.js` qui exporte **par défaut** un objet.
+Un add-on de Skyjojo est un module ES placé dans `public/skyjojo/addons/<id>.js` qui exporte **par défaut** un objet.
 Tous les champs sont facultatifs sauf `id`. Le moteur (`engine/`) ne connaît aucun add-on à l'avance :
 l'application les enregistre au démarrage (`registerAddon`) et l'état de jeu ne stocke que leurs identifiants.
 
@@ -52,7 +52,8 @@ export default {
 - **Informations secrètes** : `ctx.store` n'est jamais envoyé tel quel. Seul ce que renvoie
   `viewState()` part sur le réseau. Les événements (`ctx.emit`) et l'historique (`ctx.log`) sont
   envoyés à **tous** les joueurs : n'y mettez que des informations publiques.
-- **Exécution** : seul l'hôte exécute le moteur. L'invité charge le même module uniquement pour
+- **Exécution** : le serveur exécute le moteur et les add-ons (il les charge au démarrage : redémarrez
+  le conteneur après une modification). Les téléphones chargent le même module uniquement pour
   l'affichage (`ui`) et pour calculer le score visible (`scoreCard`).
 
 ## Le contexte `ctx`
@@ -60,7 +61,7 @@ export default {
 | Champ | Description |
 |---|---|
 | `ctx.addon` | id de l'add-on |
-| `ctx.options` | options de `config/addons.json` → `options[id]` |
+| `ctx.options` | options de `public/skyjojo/config/addons.json` → `options[id]` |
 | `ctx.store` | état privé persistant de l'add-on |
 | `ctx.player` | index du joueur concerné (actions, onDraw, onReveal, onSwap) |
 | `ctx.rng` | générateur déterministe (`next()`, `int(n)`) |
@@ -102,13 +103,13 @@ est vrai (c'est ainsi que fonctionne le coup d'œil des cartes 13).
 
 ## Activer un add-on
 
-1. Créez `addons/mon-addon.js`.
-2. Ajoutez `"mon-addon"` dans `available` de `config/addons.json` (et dans `enabled` pour qu'il
+1. Créez `public/skyjojo/addons/mon-addon.js`.
+2. Ajoutez `"mon-addon"` dans `available` de `public/skyjojo/config/addons.json` (et dans `enabled` pour qu'il
    soit coché par défaut). Ajoutez ses options éventuelles dans `options`.
-3. Ajoutez le fichier dans la liste `PRECACHE` de `sw.js` pour le mode hors-ligne.
+3. Ajoutez le fichier dans la liste `PRECACHE` de `public/sw.js` pour le mode hors-ligne.
 4. Écrivez un test dans `tests/` (voir `tests/addons.test.js`).
 
-Dans le lobby, l'hôte coche les add-ons de la partie ; l'invité reçoit la liste et charge les mêmes modules.
+Au lancement d'une partie, on coche les add-ons voulus dans le menu de la salle de jeux.
 
 ## Les add-ons fournis
 

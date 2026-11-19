@@ -1,0 +1,205 @@
+// Serveur de la salle de jeux : API, WebSocket, parties Skyjojo arbitrées côté serveur.
+import { test, before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import WebSocket from 'ws';
+import { request } from 'node:http';
+import { startServer } from '../server/index.js';
+
+let app;
+let base;
+let dir;
+const INVITE = 'code-famille';
+
+before(async () => {
+  dir = mkdtempSync(join(tmpdir(), 'arcade-'));
+  app = await startServer({ port: 0, dataDir: dir, inviteCode: INVITE });
+  base = `http://localhost:${app.port}`;
+});
+after(async () => {
+  await app.close();
+  rmSync(dir, { recursive: true, force: true });
+});
+
+async function call(path, { method = 'GET', body, token } = {}) {
+  const res = await fetch(base + path, {
+    method,
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: body && JSON.stringify(body),
+  });
+  return { status: res.status, data: await res.json() };
+}
+
+let alice;
+let bob;
+
+test('profils : code d’invitation obligatoire, PIN vérifié', async () => {
+  assert.equal((await call('/api/profiles', { method: 'POST', body: { name: 'X', pin: '1234', invite: 'faux' } })).status, 403);
+  assert.equal((await call('/api/profiles', { method: 'POST', body: { name: 'X', pin: '12', invite: INVITE } })).status, 400);
+  const a = await call('/api/profiles', { method: 'POST', body: { name: 'Johary', avatar: '🐧', pin: '1234', invite: INVITE } });
+  assert.equal(a.status, 201);
+  alice = { ...a.data.profile, token: a.data.token };
+  const b = await call('/api/profiles', { method: 'POST', body: { name: 'Jojo', avatar: '🐱', pin: '9876', invite: INVITE } });
+  bob = { ...b.data.profile, token: b.data.token };
+  assert.equal((await call('/api/profiles', { method: 'POST', body: { name: 'jojo', pin: '1111', invite: INVITE } })).status, 409);
+
+  const hub = await call('/api/hub');
+  assert.deepEqual(hub.data.profiles.map((p) => p.name), ['Johary', 'Jojo']);
+  assert.ok(!JSON.stringify(hub.data).includes('pinHash'));
+  assert.equal(hub.data.games[0].id, 'skyjojo');
+
+  assert.equal((await call('/api/login', { method: 'POST', body: { profileId: alice.id, pin: '0000' } })).status, 401);
+  const login = await call('/api/login', { method: 'POST', body: { profileId: alice.id, pin: '1234' } });
+  assert.equal(login.status, 200);
+  assert.equal((await call('/api/hub', { token: login.data.token })).data.me.name, 'Johary');
+  assert.equal((await call('/api/matches')).status, 401);
+  // le PIN n'est jamais stocké en clair
+  app.store.flush();
+  const db = readFileSync(join(dir, 'db.json'), 'utf8');
+  assert.ok(!db.includes('"1234"') && !db.includes(login.data.token));
+});
+
+test('fichiers statiques : hub, jeu, et pas de sortie du dossier public', async () => {
+  const home = await fetch(base + '/');
+  assert.equal(home.status, 200);
+  assert.match(await home.text(), /<html/);
+  assert.equal((await fetch(base + '/skyjojo/')).status, 200);
+  assert.equal((await fetch(base + '/skyjojo')).status, 200); // redirection suivie
+  // chemin « .. » envoyé brut (fetch le normaliserait)
+  const raw = await new Promise((ok) => request({ port: app.port, path: '/../package.json' }, (r) => ok(r.statusCode)).end());
+  assert.notEqual(raw, 200);
+  assert.equal((await fetch(base + '/nope.js')).status, 404);
+});
+
+function connect(token) {
+  return new Promise((ok, ko) => {
+    const ws = new WebSocket(`ws://localhost:${app.port}/ws`);
+    ws.inbox = [];
+    ws.waiters = [];
+    ws.on('message', (raw) => {
+      const msg = JSON.parse(raw);
+      const w = ws.waiters.find((x) => x.pred(msg));
+      if (w) {
+        ws.waiters.splice(ws.waiters.indexOf(w), 1);
+        w.ok(msg);
+      } else ws.inbox.push(msg);
+    });
+    ws.next = (pred) =>
+      new Promise((res) => {
+        const i = ws.inbox.findIndex(pred);
+        if (i >= 0) return res(ws.inbox.splice(i, 1)[0]);
+        ws.waiters.push({ pred, ok: res });
+      });
+    ws.on('open', async () => {
+      ws.send(JSON.stringify({ t: 'hello', token }));
+      await ws.next((m) => m.t === 'welcome');
+      ok(ws);
+    });
+    ws.on('error', ko);
+  });
+}
+
+test('partie Skyjojo arbitrée par le serveur, vues filtrées, statistiques', async () => {
+  const bad = await call('/api/matches', { method: 'POST', token: alice.token, body: { game: 'skyjojo', opponent: alice.id } });
+  assert.equal(bad.status, 400);
+  const created = await call('/api/matches', {
+    method: 'POST',
+    token: alice.token,
+    body: { game: 'skyjojo', opponent: bob.id, options: { endThreshold: 50, addons: ['etoile', 'inconnu'] } },
+  });
+  assert.equal(created.status, 201);
+  const id = created.data.id;
+  assert.deepEqual(created.data.options, { endThreshold: 50, addons: ['etoile'] });
+  assert.equal(created.data.yourTurn, true); // phase de départ : les deux doivent retourner 2 cartes
+
+  const wa = await connect(alice.token);
+  const wb = await connect(bob.token);
+  wa.send(JSON.stringify({ t: 'watch', match: id }));
+  wb.send(JSON.stringify({ t: 'watch', match: id }));
+  const va = await wa.next((m) => m.t === 'match');
+  const vb = await wb.next((m) => m.t === 'match');
+  assert.equal(va.view.me, 0);
+  assert.equal(vb.view.me, 1);
+  assert.equal(va.view.deck, undefined);
+  assert.ok(va.view.players[1].grid.every((s) => !s.card));
+
+  // un intrus ne peut pas regarder la partie
+  const c = await call('/api/profiles', { method: 'POST', body: { name: 'Intrus', pin: '5555', invite: INVITE } });
+  const wc = await connect(c.data.token);
+  wc.send(JSON.stringify({ t: 'watch', match: id }));
+  assert.equal((await wc.next((m) => m.t === 'error')).code, 'forbidden');
+  wc.close();
+
+  // action illégale renvoyée à son auteur
+  wa.send(JSON.stringify({ t: 'action', match: id, action: { type: 'drawDeck' }, id: 7 }));
+  const err = await wa.next((m) => m.t === 'error');
+  assert.equal(err.code, 'wrong_phase');
+  assert.equal(err.id, 7);
+
+  // départ : chacun retourne 2 cartes, chaque joueur reçoit sa propre vue
+  for (const [ws, idx] of [[wa, 0], [wa, 1], [wb, 0], [wb, 1]]) {
+    ws.send(JSON.stringify({ t: 'action', match: id, action: { type: 'reveal', index: idx } }));
+    await wa.next((m) => m.t === 'match');
+    await wb.next((m) => m.t === 'match');
+  }
+
+  // on joue jusqu'au bout avec une stratégie simple : piocher, échanger la première carte cachée
+  const sockets = { [alice.id]: wa, [bob.id]: wb };
+  let state = app.matches.get(id);
+  let guard = 0;
+  while (state.status === 'active' && guard++ < 2000) {
+    const s = state.state;
+    let who;
+    let action;
+    if (s.phase === 'roundOver') {
+      who = alice.id;
+      action = { type: 'nextRound' };
+    } else if (s.phase === 'setup') {
+      const p = s.players.find((pl) => pl.grid.filter((x) => x && x.up).length < 2);
+      who = p.id;
+      action = { type: 'reveal', index: p.grid.findIndex((x) => x && !x.up) };
+    } else {
+      const p = s.players[s.turn];
+      who = p.id;
+      const hidden = p.grid.findIndex((x) => x && !x.up);
+      if (s.step === 'draw') action = { type: 'drawDeck' };
+      else action = { type: 'swap', index: hidden >= 0 ? hidden : p.grid.findIndex((x) => x) };
+    }
+    sockets[who].send(JSON.stringify({ t: 'action', match: id, action }));
+    await wa.next((m) => m.t === 'match');
+    await wb.next((m) => m.t === 'match');
+    state = app.matches.get(id);
+  }
+  assert.equal(state.status, 'finished');
+  assert.ok(state.result.winners.length >= 1);
+
+  const stats = await call('/api/stats', { token: alice.token });
+  assert.equal(stats.data.rivals[0].opponent.name, 'Jojo');
+  assert.equal(stats.data.rivals[0].played, 1);
+  assert.equal(stats.data.history[0].id, id);
+  const bobStats = await call('/api/stats', { token: bob.token });
+  assert.equal(stats.data.rivals[0].wins + stats.data.rivals[0].draws, bobStats.data.rivals[0].losses + bobStats.data.rivals[0].draws);
+
+  wa.send(JSON.stringify({ t: 'action', match: id, action: { type: 'nextRound' } }));
+  assert.equal((await wa.next((m) => m.t === 'error')).code, 'over');
+  wa.close();
+  wb.close();
+});
+
+test('abandon : la partie sort des parties en cours et ne compte pas dans les stats', async () => {
+  const m = await call('/api/matches', { method: 'POST', token: bob.token, body: { game: 'skyjojo', opponent: alice.id } });
+  const r = await call(`/api/matches/${m.data.id}/abandon`, { method: 'POST', token: alice.token });
+  assert.equal(r.data.status, 'abandoned');
+  const stats = await call('/api/stats', { token: alice.token });
+  assert.equal(stats.data.rivals[0].played, 1);
+});
+
+test('les données survivent à un redémarrage', async () => {
+  app.store.flush();
+  const again = await startServer({ port: 0, dataDir: dir, inviteCode: INVITE });
+  assert.equal(again.auth.authenticate(alice.token).name, 'Johary');
+  assert.equal(again.matches.listFor(alice.id).length, 2);
+  await again.close();
+});

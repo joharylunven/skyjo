@@ -1,4 +1,4 @@
-import { createGame, applyAction } from '../engine/index.js';
+import { createGame, applyAction } from '../public/skyjojo/engine/index.js';
 
 export const PLAYERS = [
   { id: 'p0', name: 'Alice' },

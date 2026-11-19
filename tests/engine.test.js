@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { applyAction, buildDeck, DEFAULT_DECK, normalizeDeckSpec, viewFor, scorePlayer } from '../engine/index.js';
+import { applyAction, buildDeck, DEFAULT_DECK, normalizeDeckSpec, viewFor, scorePlayer } from '../public/skyjojo/engine/index.js';
 import { newGame, act, setGrid, toPlay } from './helpers.js';
 
 test('le paquet par défaut contient 150 cartes avec la bonne répartition', () => {

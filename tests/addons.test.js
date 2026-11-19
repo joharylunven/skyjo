@@ -1,10 +1,10 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { applyAction, registerAddon, clearAddons, scorePlayer, viewFor } from '../engine/index.js';
-import joker from '../addons/joker.js';
-import double from '../addons/double.js';
-import spy from '../addons/spy.js';
+import { applyAction, registerAddon, clearAddons, scorePlayer, viewFor } from '../public/skyjojo/engine/index.js';
+import joker from '../public/skyjojo/addons/joker.js';
+import double from '../public/skyjojo/addons/double.js';
+import spy from '../public/skyjojo/addons/spy.js';
 import { newGame, act, setGrid, toPlay } from './helpers.js';
 
 const readJson = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url)));
@@ -15,7 +15,7 @@ beforeEach(() => {
 });
 
 test('config/addons.json : les exemples Joker, Double et Espion sont désactivés par défaut', () => {
-  const addons = readJson('../config/addons.json');
+  const addons = readJson('../public/skyjojo/config/addons.json');
   for (const id of ['joker', 'double', 'spy']) {
     assert.ok(addons.available.includes(id));
     assert.ok(!addons.enabled.includes(id));

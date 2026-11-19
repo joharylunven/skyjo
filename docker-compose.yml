@@ -1,0 +1,17 @@
+# Jojo Arcade sur le homelab.
+#   1. cp .env.example .env  puis choisir INVITE_CODE
+#   2. docker compose up -d --build
+#   3. sudo tailscale funnel --bg 8090   (voir README)
+services:
+  arcade:
+    build: .
+    container_name: jojo-arcade
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PORT: 8080
+      DATA_DIR: /app/data
+    ports:
+      - "127.0.0.1:8090:8080"
+    volumes:
+      - ./data:/app/data

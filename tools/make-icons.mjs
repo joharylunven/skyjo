@@ -101,7 +101,7 @@ function render(size, opts) {
   return png(size, buf);
 }
 
-const out = new URL('../icons/', import.meta.url);
+const out = new URL('../public/icons/', import.meta.url);
 writeFileSync(new URL('icon-192.png', out), render(192, { rounded: true, scale: 1 }));
 writeFileSync(new URL('icon-512.png', out), render(512, { rounded: true, scale: 1 }));
 writeFileSync(new URL('icon-maskable-512.png', out), render(512, { rounded: false, scale: 0.78 }));

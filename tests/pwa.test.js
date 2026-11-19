@@ -1,39 +1,42 @@
-// Vérifie que le service worker pré-cache bien tous les fichiers statiques du jeu.
+// Vérifie le service worker, le manifest et les pages de la salle de jeux.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = new URL('../', import.meta.url);
-const read = (p) => readFileSync(new URL(p, root), 'utf8');
+const pub = fileURLToPath(new URL('../public/', import.meta.url));
+const read = (p) => readFileSync(join(pub, p), 'utf8');
 
-test('sw.js pré-cache tous les fichiers de engine/, net/, ui/, addons/, config/, css/, icons/', () => {
-  const sw = read('sw.js');
-  const listed = new Set([...sw.matchAll(/'\.\/([^']*)'/g)].map((m) => m[1]));
-  for (const dir of ['engine', 'net', 'ui', 'addons', 'config', 'css', 'icons']) {
-    for (const file of readdirSync(new URL(`${dir}/`, root))) {
-      assert.ok(listed.has(`${dir}/${file}`), `${dir}/${file} absent de PRECACHE dans sw.js`);
-    }
+function walk(dir, out = []) {
+  for (const f of readdirSync(dir)) {
+    const full = join(dir, f);
+    statSync(full).isDirectory() ? walk(full, out) : out.push('/' + full.slice(pub.length).split('\\').join('/'));
   }
-  for (const p of listed) if (p) assert.doesNotThrow(() => read(p), `${p} listé mais introuvable`);
+  return out;
+}
+
+test('sw.js pré-cache tous les fichiers de public/ (et rien d’inexistant)', () => {
+  const sw = read('sw.js');
+  const block = sw.slice(sw.indexOf('const PRECACHE = ['), sw.indexOf('];', sw.indexOf('const PRECACHE = [')));
+  const listed = new Set([...block.matchAll(/'(\/[^']*)'/g)].map((m) => m[1]));
+  for (const f of walk(pub)) if (f !== '/sw.js') assert.ok(listed.has(f), `${f} absent de PRECACHE dans public/sw.js`);
+  for (const p of listed) if (p !== '/') assert.doesNotThrow(() => read(p.slice(1)), `${p} listé mais introuvable`);
 });
 
-test('manifest : chemins relatifs et icônes présentes', () => {
+test('manifest : application installable sur l’écran d’accueil', () => {
   const m = JSON.parse(read('manifest.webmanifest'));
-  assert.equal(m.start_url, './');
-  assert.equal(m.scope, './');
-  for (const icon of m.icons) {
-    assert.ok(!icon.src.startsWith('/'), 'chemin absolu interdit (site servi sous /nom-du-repo/)');
-    assert.doesNotThrow(() => readFileSync(new URL(icon.src, root)));
-  }
+  assert.equal(m.start_url, '/');
+  assert.equal(m.display, 'standalone');
+  for (const icon of m.icons) assert.doesNotThrow(() => readFileSync(join(pub, icon.src)));
   assert.ok(m.icons.some((i) => i.sizes === '512x512' && i.purpose === 'maskable'));
 });
 
-test('index.html : aucun chemin absolu', () => {
-  const html = read('index.html');
-  assert.ok(!/(src|href)="\//.test(html));
-});
-
-test('la version de PeerJS est figée', () => {
-  const net = JSON.parse(read('config/network.json'));
-  assert.match(net.peerjsUrl, /peerjs@\d+\.\d+\.\d+\//);
+test('pages : icône iPhone et manifest déclarés', () => {
+  for (const page of ['index.html', 'skyjojo/index.html']) {
+    const html = read(page);
+    assert.match(html, /apple-touch-icon/);
+    assert.match(html, /rel="manifest"/);
+    assert.match(html, /apple-mobile-web-app-capable/);
+  }
 });

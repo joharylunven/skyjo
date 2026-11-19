@@ -1,0 +1,361 @@
+/* Accueil de la salle de jeux. */
+
+.hub {
+  min-height: 100dvh;
+  gap: 22px;
+}
+.hub section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.section-title {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.empty {
+  margin: 0;
+  color: var(--ink-dim);
+  font-size: 0.92rem;
+}
+
+/* --- connexion */
+
+.login {
+  justify-content: center;
+}
+.brand {
+  text-align: center;
+}
+.brand-icon svg {
+  width: 110px;
+  height: auto;
+}
+.brand h1,
+.hub-head h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 800;
+}
+.tagline {
+  margin: 4px 0 0;
+  color: var(--ink-dim);
+}
+.profiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 12px;
+}
+.profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 8px;
+  min-height: 120px;
+  background: var(--surface);
+}
+.profile.add {
+  color: var(--ink-dim);
+  border-style: dashed;
+  background: transparent;
+}
+.avatar-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  font-size: 1.2rem;
+  flex: none;
+}
+.avatar-badge.big {
+  width: 56px;
+  height: 56px;
+  font-size: 1.9rem;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+}
+input.pin {
+  font-size: 1.6rem;
+  letter-spacing: 0.4em;
+  text-align: center;
+}
+.avatar-picker {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+.avatar-choice {
+  min-height: 44px;
+  padding: 0;
+  font-size: 1.4rem;
+  background: var(--bg);
+}
+.avatar-choice.on {
+  border-color: var(--ink);
+  background: var(--surface-2);
+}
+.install {
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.install strong {
+  color: var(--ink);
+}
+.share-icon svg {
+  width: 16px;
+  height: 16px;
+  vertical-align: -3px;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* --- accueil */
+
+.hub-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.me {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.match {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  padding: 10px 12px;
+  background: var(--surface);
+  font-weight: 400;
+}
+.game-chip {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 1.3rem;
+  background: color-mix(in srgb, var(--c) 22%, var(--surface-2));
+  flex: none;
+}
+.match-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.match-text small {
+  color: var(--ink-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+.tag.go {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: transparent;
+}
+
+.games {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.game {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  text-align: left;
+  padding: 14px;
+  min-height: 118px;
+  border-radius: var(--radius);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--c) 20%, var(--surface)), var(--surface));
+  border: 1px solid var(--line);
+  font-weight: 400;
+}
+.game .game-emoji {
+  font-size: 1.8rem;
+}
+.game small {
+  color: var(--ink-dim);
+  font-size: 0.8rem;
+}
+.game.soon {
+  opacity: 0.45;
+}
+
+.rival .versus {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  text-align: center;
+}
+.side-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.big-num {
+  font-size: 2rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.side-score small,
+.vs {
+  color: var(--ink-dim);
+  font-size: 0.85rem;
+}
+.per-game {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.per-game td {
+  padding: 6px 4px;
+  border-top: 1px solid var(--line);
+}
+.per-game td:nth-child(2) {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.per-game .dim {
+  text-align: right;
+  color: var(--ink-dim);
+}
+.history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.history li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.result {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 99px;
+  min-width: 64px;
+  text-align: center;
+}
+.result.won {
+  background: color-mix(in srgb, var(--ok) 25%, transparent);
+  color: var(--ok);
+}
+.result.lost {
+  background: color-mix(in srgb, var(--danger) 22%, transparent);
+  color: var(--danger);
+}
+.result.draw {
+  background: var(--surface-2);
+  color: var(--ink-dim);
+}
+.hist-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.hist-text small {
+  color: var(--ink-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.history time {
+  color: var(--ink-dim);
+  font-size: 0.8rem;
+}
+
+/* --- nouvelle partie */
+
+.opponents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.opponent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 6px;
+  color: var(--ink);
+}
+.opponent.on {
+  border-color: var(--ink);
+}
+.checks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+}
+.check input {
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
+  flex: none;
+  accent-color: var(--accent);
+}
+.check span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.check small {
+  color: var(--ink-dim);
+}
