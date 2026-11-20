@@ -1,5 +1,6 @@
-// Bataille navale dans la salle de jeux : le serveur arbitre, cette page affiche la vue du joueur.
-// URL : /bataille/?match=<id>
+// Sushi maritime : la bataille navale de nos parties en vrai, où les bateaux étaient des makis et
+// où l'on mangeait ce qu'on touchait. Le serveur arbitre, cette page affiche la vue du joueur.
+// URL : /bataille/?match=<id> (identifiant historique du jeu)
 
 import { api, session as auth, Live, registerServiceWorker } from '/shared/api.js';
 import { h, clear, toast } from '/shared/dom.js';
@@ -10,13 +11,27 @@ const matchId = new URLSearchParams(location.search).get('match');
 const goHome = () => (location.href = '/');
 const DRAFT_KEY = `bataille.draft.${matchId}`;
 
-const COLORS = {
-  'porte-avions': '#5b8cff',
-  croiseur: '#f3a44f',
-  'contre-torpilleur': '#6fd36f',
-  'sous-marin': '#c58bff',
-  torpilleur: '#f3e04f',
+// Allure de chaque pièce : makis en tranches (futo, cali, maki) ou pièces d'un seul tenant.
+const PIECES = {
+  'porte-avions': 'futo', // futomaki
+  croiseur: 'spring', // rouleau de printemps
+  'contre-torpilleur': 'cali', // california roll
+  'sous-marin': 'maki', // maki saumon
+  torpilleur: 'nigiri',
 };
+const SLICED = ['futo', 'cali', 'maki'];
+const kindOf = (id) => PIECES[id] ?? 'maki';
+const pick = (list) => list[Math.floor(Math.random() * list.length)];
+
+/** Dessin d'une pièce (tranches de maki ou pièce entière), orientée « h » ou « v ». */
+function pieceEl(id, len, dir, extra = {}) {
+  const kind = kindOf(id);
+  return h(
+    'div.piece',
+    { ...extra, class: [`p-${kind}`, dir, extra.class ?? ''].join(' ') },
+    SLICED.includes(kind) ? Array.from({ length: len }, () => h('span.slice')) : null,
+  );
+}
 
 const ICONS = {
   back: '<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
@@ -61,9 +76,9 @@ function boot() {
       app.pending = false;
       if (app.aim && msg.view.myShots.some((s) => s.x === app.aim.x && s.y === app.aim.y)) app.aim = null;
       if (msg.view.phase !== 'placement') sessionStorage.removeItem(DRAFT_KEY);
-      document.title = `Bataille navale · ${msg.summary.opponent?.name ?? ''}`;
-      announce(msg.events ?? []);
+      document.title = `Sushi maritime · ${msg.summary.opponent?.name ?? ''}`;
       render(msg.events ?? []);
+      announce(msg.events ?? []);
     } else if (msg.t === 'presence' && msg.match === matchId) {
       app.online = msg.online;
       render();
@@ -113,31 +128,68 @@ async function abandon() {
 
 // ---------------------------------------------------------------------------- annonces
 
-const shipName = (id) => app.view.fleet.find((f) => f.id === id)?.name ?? 'navire';
+const shipName = (id) => app.view.fleet.find((f) => f.id === id)?.name ?? 'pièce';
 const oppName = () => app.summary?.opponent?.name ?? 'L’adversaire';
 
-/** Grand message éphémère après chaque tir (« Touché ! », « Coulé ! »…). */
+/**
+ * Après chaque coup : les baguettes arrivent sur la case (elles attrapent le morceau, piquent
+ * dedans, ou claquent dans le vide), puis un bandeau annonce le résultat.
+ */
 function announce(events) {
   const shot = events.find((e) => e.type === 'shot');
   if (!shot) return;
   const mine = shot.by === app.view.me;
   const where = cellName(shot.x, shot.y);
+  const name = shot.ship ? shipName(shot.ship) : '';
+  const lower = name.toLowerCase();
   let text;
-  let kind = shot.result;
-  if (mine) text = shot.result === 'miss' ? `${where} · Dans l’eau` : shot.result === 'hit' ? `${where} · Touché !` : `Coulé ! ${shipName(shot.ship)}`;
+  if (mine)
+    text =
+      shot.result === 'miss'
+        ? pick([`${where} · Rien dans l’assiette`, `${where} · Clac ! Dans le vide`, `${where} · Juste un grain de riz`])
+        : shot.result === 'hit'
+          ? pick([`Miam ! Un bout de ${lower}`, `Oishii ! ${name} entamé`, `${where} · Une bouchée de ${lower}`])
+          : `Itadakimasu ! ${name} englouti`;
   else
     text =
       shot.result === 'miss'
-        ? `${oppName()} tire en ${where} · raté`
+        ? `${oppName()} pique dans le vide en ${where}`
         : shot.result === 'hit'
-          ? `${oppName()} touche votre ${shipName(shot.ship).toLowerCase()}`
-          : `${oppName()} coule votre ${shipName(shot.ship).toLowerCase()}`;
-  if (events.some((e) => e.type === 'over')) kind = 'sunk';
+          ? `${oppName()} croque votre ${lower}`
+          : `${oppName()} engloutit votre ${lower} 😱`;
+  const kind = events.some((e) => e.type === 'over') ? 'sunk' : shot.result;
+  chopsticks(shot, mine);
   // hors du rendu principal : l'animation ne redémarre pas à chaque rafraîchissement
   document.querySelector('.flash')?.remove();
-  const el = h('div.flash', { class: `${kind} ${mine ? 'mine' : 'theirs'}`, role: 'status' }, text);
+  const el = h('div.flash', { class: `${kind} ${mine ? 'mine' : 'theirs'}`, role: 'status' }, h('span.hanko', {}, kind === 'miss' ? '空' : kind === 'sunk' ? '完' : '旨'), h('span', {}, text));
+  setTimeout(() => document.body.append(el), 450);
+  setTimeout(() => el.remove(), 2600);
+}
+
+const STICKS = `<svg viewBox="0 0 120 200" aria-hidden="true">
+  <defs><linearGradient id="hashi" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#b3261e"/><stop offset="0.34" stop-color="#8f1d17"/>
+    <stop offset="0.345" stop-color="#e9c46a"/><stop offset="0.37" stop-color="#e9c46a"/>
+    <stop offset="0.375" stop-color="#e6c79a"/><stop offset="1" stop-color="#c99a5e"/>
+  </linearGradient></defs>
+  <polygon class="stick l" points="37,0 49,0 59.5,197 57,197" fill="url(#hashi)"/>
+  <polygon class="stick r" points="71,0 83,0 63,197 60.5,197" fill="url(#hashi)"/>
+</svg>`;
+
+/** Animation des baguettes au-dessus de la case visée. */
+function chopsticks(shot, mine) {
+  const cell = document.querySelector(`.grid.${mine ? 'enemy' : 'small'} .cell[data-x="${shot.x}"][data-y="${shot.y}"]`);
+  if (!cell) return;
+  const r = cell.getBoundingClientRect();
+  const variant = shot.result === 'miss' ? pick(['poke', 'clack']) : pick(['pinch', 'stab', 'swoop']);
+  const el = h(
+    'div.chop',
+    { class: `v-${variant} ${shot.result} ${mine ? 'mine' : 'theirs'}`, style: { left: `${r.left + r.width / 2}px`, top: `${r.top + r.height / 2}px`, '--cell': `${r.width}px` } },
+    h('div.sticks', { innerHTML: STICKS }),
+    shot.result === 'miss' ? h('span.splash') : pieceEl(shot.ship, 1, 'h', { class: 'morsel' }),
+  );
   document.body.append(el);
-  setTimeout(() => el.remove(), 2000);
+  setTimeout(() => el.remove(), 1500);
 }
 
 // ---------------------------------------------------------------------------- grilles
@@ -158,10 +210,10 @@ function neighbours(ships, fleet, size) {
 }
 
 /**
- * Une grille : cases d'eau (boutons), navires (bandes arrondies sur plusieurs cases) et marques
- * de tir posés par-dessus, tous placés dans la même grille CSS.
+ * Un plateau : cases (boutons), pièces de sushi (sur plusieurs cases) et marques de coups de
+ * baguettes posées par-dessus, tous placés dans la même grille CSS.
  */
-function grid({ size, fleet, ships = [], shots = [], onTap, cellClass, labels = false, cls = '', selected = null, sunk = [], boom = null }) {
+function grid({ size, fleet, ships = [], shots = [], onTap, cellClass, labels = false, cls = '', selected = null, sunk = [], boom = null, bites = false }) {
   const o = labels ? 1 : 0;
   const items = [];
   if (labels) {
@@ -184,14 +236,15 @@ function grid({ size, fleet, ships = [], shots = [], onTap, cellClass, labels = 
         }),
       );
     }
+  const eatenCells = new Set();
   for (const s of ships) {
     const len = fleet.find((f) => f.id === s.id).len;
+    if (bites || sunk.includes(s.id)) for (const [x, y] of shipCells(s, fleet)) eatenCells.add(key(x, y));
     items.push(
-      h('div.ship', {
+      pieceEl(s.id, len, s.dir, {
         dataset: { id: s.id },
-        class: [s.dir, selected === s.id ? 'selected' : '', sunk.includes(s.id) ? 'sunk' : ''].join(' '),
+        class: ['ship', selected === s.id ? 'selected' : '', sunk.includes(s.id) ? 'sunk' : ''].join(' '),
         style: {
-          '--c': COLORS[s.id] ?? '#8b919c',
           gridColumn: s.dir === 'h' ? `${s.x + 1 + o} / span ${len}` : `${s.x + 1 + o}`,
           gridRow: s.dir === 'v' ? `${s.y + 1 + o} / span ${len}` : `${s.y + 1 + o}`,
         },
@@ -200,14 +253,20 @@ function grid({ size, fleet, ships = [], shots = [], onTap, cellClass, labels = 
   }
   const last = shots[shots.length - 1];
   for (const t of shots) {
+    // touché : sur une pièce visible, une bouchée en moins ; sinon le morceau découvert
+    const eaten = t.r !== 'miss' && eatenCells.has(key(t.x, t.y));
     items.push(
-      h('div.mark', {
-        class: [t.r === 'miss' ? 'miss' : 'hit', t === last ? 'recent' : '', boom && boom.x === t.x && boom.y === t.y ? 'boom' : ''].join(' '),
-        style: { gridColumn: t.x + 1 + o, gridRow: t.y + 1 + o },
-      }),
+      h(
+        'div.mark',
+        {
+          class: [t.r === 'miss' ? 'miss' : eaten ? 'eaten' : 'hit', t === last ? 'recent' : '', boom && boom.x === t.x && boom.y === t.y ? 'boom' : ''].join(' '),
+          style: { gridColumn: t.x + 1 + o, gridRow: t.y + 1 + o },
+        },
+        t.r !== 'miss' && !eaten ? pieceEl(t.ship, 1, 'h', { class: 'morsel' }) : null,
+      ),
     );
   }
-  return h('div.grid', { class: `${cls} ${labels ? 'labelled' : ''}`, style: { '--n': size } }, items);
+  return h('div.tray', { class: cls }, h('div.grid', { class: `${cls} ${labels ? 'labelled' : ''}`, style: { '--n': size } }, items));
 }
 
 function fleetChips(fleet, sunkIds) {
@@ -217,8 +276,8 @@ function fleetChips(fleet, sunkIds) {
     fleet.map((f) =>
       h(
         'li',
-        { class: sunkIds.includes(f.id) ? 'down' : '', style: { '--c': COLORS[f.id] } },
-        h('span.pips', {}, Array.from({ length: f.len }, () => h('i'))),
+        { class: sunkIds.includes(f.id) ? 'down' : '' },
+        h('span.mini', { style: { '--len': f.len } }, pieceEl(f.id, f.len, 'h')),
         h('span', {}, f.name),
       ),
     ),
@@ -274,7 +333,7 @@ function shipAt(ships, fleet, x, y) {
 function rotateSelected(view) {
   const s = app.draft.find((x) => x.id === app.selected);
   if (!s) return;
-  if (!tryPlace(view, { ...s, dir: s.dir === 'h' ? 'v' : 'h' })) toast('Pas la place pour pivoter ici.', 'error');
+  if (!tryPlace(view, { ...s, dir: s.dir === 'h' ? 'v' : 'h' })) toast('Pas la place pour la tourner ici.', 'error');
   render();
 }
 
@@ -285,9 +344,9 @@ function onPlacementTap(view, x, y) {
     if (hit.id === app.selected) return rotateSelected(view);
     return set({ selected: hit.id });
   }
-  if (!app.selected) return toast('Touchez d’abord un navire.');
+  if (!app.selected) return toast('Touchez d’abord une pièce.');
   const s = app.draft.find((v) => v.id === app.selected);
-  if (!tryPlace(view, { ...s, x, y })) toast('Trop près d’un autre navire.', 'error');
+  if (!tryPlace(view, { ...s, x, y })) toast('Trop près d’une autre pièce.', 'error');
   render();
 }
 
@@ -295,7 +354,8 @@ function onPlacementTap(view, x, y) {
 // Pendant le geste, seul l'élément du navire bouge (pas de nouveau rendu, qui casserait le geste).
 let dragEndedAt = 0;
 
-function enableDrag(g, view) {
+function enableDrag(tray, view) {
+  const g = tray.querySelector('.grid');
   let drag = null;
   // case la plus proche du doigt (les interstices entre cases comptent aussi)
   const cellAt = (e) => {
@@ -342,13 +402,13 @@ function enableDrag(g, view) {
     if (d.candidate) {
       app.draft = app.draft.map((v) => (v.id === d.ship.id ? d.candidate : v));
       saveDraft();
-    } else toast('Trop près d’un autre navire.', 'error');
+    } else toast('Trop près d’une autre pièce.', 'error');
     app.selected = d.ship.id;
     render();
   };
   g.addEventListener('pointerup', end);
   g.addEventListener('pointercancel', end);
-  return g;
+  return tray;
 }
 
 function placementScreen(view) {
@@ -356,9 +416,9 @@ function placementScreen(view) {
   if (me.ready) {
     const opp = view.players[1 - view.me];
     return [
-      h('div.status', {}, h('strong', {}, `En attente de ${oppName()}…`), h('small', {}, opp.ready ? '' : `${oppName()} place sa flotte. Vous serez prévenu·e dès que la bataille commence.`)),
+      h('div.status', {}, h('strong', {}, `${oppName()} dresse son plateau…`), h('small', {}, opp.ready ? '' : 'Le repas commence dès que les deux plateaux sont prêts.')),
       h('section.board', {}, grid({ size: view.size, fleet: view.fleet, ships: view.myShips, cls: 'big' })),
-      h('div.actions', {}, h('button', { onClick: () => act({ type: 'unplace' }), disabled: app.pending }, 'Modifier ma flotte')),
+      h('div.actions', {}, h('button', { onClick: () => act({ type: 'unplace' }), disabled: app.pending }, 'Modifier mon plateau')),
     ];
   }
   loadDraft(view);
@@ -366,8 +426,8 @@ function placementScreen(view) {
     h(
       'div.status.mine',
       {},
-      h('strong', {}, 'Placez votre flotte'),
-      h('small', {}, 'Faites glisser un navire pour le déplacer, touchez-le deux fois pour le pivoter. Les navires ne doivent pas se toucher.'),
+      h('strong', {}, 'Dressez votre plateau'),
+      h('small', {}, 'Faites glisser une pièce pour la déplacer, touchez-la deux fois pour la tourner. Les pièces ne se touchent pas.'),
     ),
     h(
       'section.board',
@@ -389,7 +449,7 @@ function placementScreen(view) {
       'div.actions',
       {},
       h('button', { onClick: () => shuffleDraft(view) || render() }, 'Mélanger'),
-      h('button', { onClick: () => rotateSelected(view), disabled: !app.selected }, 'Pivoter'),
+      h('button', { onClick: () => rotateSelected(view), disabled: !app.selected }, 'Tourner'),
     ),
     h(
       'button.primary.big',
@@ -400,7 +460,7 @@ function placementScreen(view) {
           act({ type: 'place', ships: app.draft });
         },
       },
-      'Flotte prête !',
+      'Plateau prêt !',
     ),
   ];
 }
@@ -445,29 +505,30 @@ function battleScreen(view, events) {
     ships: view.myShips ?? [],
     shots: view.theirShots,
     sunk: view.mySunk,
+    bites: true,
     cls: 'small',
     boom: shotEvent && shotEvent.by !== view.me ? shotEvent : null,
   });
 
   const statusText = over
     ? view.winner === view.me
-      ? 'Victoire ! Flotte ennemie coulée.'
-      : `${oppName()} a coulé toute votre flotte.`
+      ? 'Gochisōsama ! Vous avez tout dévoré.'
+      : `${oppName()} a dévoré tout votre plateau.`
     : myTurn
       ? app.aim
-        ? `Cible ${cellName(app.aim.x, app.aim.y)} — touchez-la encore ou « Feu ! »`
-        : 'À vous de tirer : choisissez une case.'
-      : `${oppName()} vise…`;
+        ? `Case ${cellName(app.aim.x, app.aim.y)} — touchez-la encore pour croquer`
+        : 'À vous de piquer : choisissez une case.'
+      : `${oppName()} prépare ses baguettes…`;
 
   return [
-    h('div.status', { class: myTurn ? 'mine' : '', 'aria-live': 'polite' }, h('strong', {}, statusText), h('small', {}, `Vous : ${me.shots} tirs, ${me.hits} touchés · ${oppName()} : ${opp.shots} tirs, ${opp.hits} touchés`)),
+    h('div.status', { class: myTurn ? 'mine' : '', 'aria-live': 'polite' }, h('strong', {}, statusText), h('small', {}, `Vous : ${me.hits} bouchées en ${me.shots} coups · ${oppName()} : ${opp.hits} en ${opp.shots}`)),
     h('section.board', {}, enemyGrid, fleetChips(view.fleet, enemySunkIds)),
-    h('section.home-waters', {}, ownGrid, h('div.home-side', {}, h('span.caption', {}, 'Votre flotte'), fleetChips(view.fleet, view.mySunk))),
+    h('section.home-waters', {}, ownGrid, h('div.home-side', {}, h('span.caption', {}, 'Votre plateau'), fleetChips(view.fleet, view.mySunk))),
     myTurn
       ? h(
           'button.primary.big.fire',
           { disabled: !app.aim || app.pending || app.status !== 'open', onClick: () => app.aim && act({ type: 'fire', ...app.aim }) },
-          app.aim ? `Feu sur ${cellName(app.aim.x, app.aim.y)} !` : 'Feu !',
+          app.aim ? `🥢 Croquer en ${cellName(app.aim.x, app.aim.y)}` : '🥢 Choisissez une case',
         )
       : null,
   ];
@@ -486,19 +547,19 @@ function sheet(title, content, onClose, cls = '') {
 function rulesSheet() {
   const v = app.view;
   return sheet(
-    'Règles de la bataille navale',
+    'Règles du Sushi maritime',
     [
       h(
         'ul.rules',
         {},
-        h('li', {}, `Chacun place en secret sa flotte sur une grille de ${v.size} × ${v.size} : ${v.fleet.map((f) => `${f.name.toLowerCase()} (${f.len})`).join(', ')}.`),
-        h('li', {}, 'Les navires sont droits (horizontaux ou verticaux) et ne se touchent pas, même par un coin.'),
-        h('li', {}, 'À tour de rôle, on tire sur une case de la grille adverse : « dans l’eau », « touché » ou « coulé » quand toutes les cases d’un navire sont touchées.'),
-        h('li', {}, v.rule === 'again' ? 'Dans cette partie, un tir réussi donne droit à un nouveau tir.' : 'Dans cette partie, on tire chacun son tour, touché ou pas.'),
-        h('li', {}, 'Autour d’un navire coulé, l’eau est grisée : inutile d’y tirer.'),
-        h('li', {}, 'Le premier qui coule toute la flotte adverse gagne.'),
+        h('li', {}, `Chacun dresse en secret son plateau de ${v.size} × ${v.size} : ${v.fleet.map((f) => `${f.name.toLowerCase()} (${f.len})`).join(', ')}.`),
+        h('li', {}, 'Les pièces sont droites (horizontales ou verticales) et ne se touchent pas, même par un coin.'),
+        h('li', {}, 'À tour de rôle, on plante ses baguettes dans une case du plateau d’en face : rien dans l’assiette, une bouchée, ou la pièce entière engloutie quand toutes ses cases sont mangées.'),
+        h('li', {}, v.rule === 'again' ? 'Dans cette partie, une bouchée réussie donne droit à une autre.' : 'Dans cette partie, on pique chacun son tour, bouchée ou pas.'),
+        h('li', {}, 'Autour d’une pièce engloutie, le plateau est vide : inutile d’y piquer.'),
+        h('li', {}, 'Le premier qui dévore tout le plateau d’en face gagne. Gochisōsama !'),
       ),
-      h('button.primary', { onClick: () => set({ rules: false }) }, 'Compris'),
+      h('button.primary', { onClick: () => set({ rules: false }) }, 'Hai, compris !'),
     ],
     () => set({ rules: false }),
   );
@@ -521,12 +582,13 @@ function endSheet(view) {
     return h('tr', {}, h('th', {}, p.name), h('td', {}, p.shots), h('td', {}, p.hits), h('td', {}, `${acc} %`));
   };
   return sheet(
-    won ? 'Victoire ! 🎉' : 'Défaite… 🌊',
+    won ? 'Gochisōsama ! 🎉' : 'Plateau dévoré… 🥲',
     [
-      h('p.notice', {}, won ? `Vous avez coulé la flotte de ${oppName()} en ${view.players[view.me].shots} tirs.` : `${oppName()} a coulé votre flotte en ${view.players[1 - view.me].shots} tirs.`),
-      h('table.scores', {}, h('thead', {}, h('tr', {}, h('th'), h('th', {}, 'Tirs'), h('th', {}, 'Touchés'), h('th', {}, 'Précision'))), h('tbody', {}, view.players.map(line))),
+      h('p.kanji', {}, won ? 'ごちそうさま' : '完食'),
+      h('p.notice', {}, won ? `Vous avez dévoré le plateau de ${oppName()} en ${view.players[view.me].shots} coups de baguettes.` : `${oppName()} a dévoré votre plateau en ${view.players[1 - view.me].shots} coups de baguettes.`),
+      h('table.scores', {}, h('thead', {}, h('tr', {}, h('th'), h('th', {}, 'Coups'), h('th', {}, 'Bouchées'), h('th', {}, 'Précision'))), h('tbody', {}, view.players.map(line))),
       h('button.primary.big', { onClick: rematch }, 'Revanche'),
-      h('div.row', {}, h('button', { style: { flex: 1 }, onClick: () => set({ peek: true }) }, 'Voir les grilles'), h('button', { style: { flex: 1 }, onClick: goHome }, 'Accueil')),
+      h('div.row', {}, h('button', { style: { flex: 1 }, onClick: () => set({ peek: true }) }, 'Voir les plateaux'), h('button', { style: { flex: 1 }, onClick: goHome }, 'Accueil')),
     ],
     null,
     'round',
@@ -564,6 +626,7 @@ function render(events = []) {
     return;
   }
   document.body.dataset.screen = 'game';
+  document.body.dataset.game = 'sushi';
   const opp = app.summary?.opponent;
   const here = opp && app.online.includes(opp.id);
   const topbar = h(
@@ -574,7 +637,7 @@ function render(events = []) {
       {},
       iconButton('back', 'Accueil', goHome),
       h('span.avatar', {}, opp?.avatar ?? '🙂', h('span.presence', { class: here ? 'on' : '', title: here ? 'En ligne' : 'Hors ligne' })),
-      h('span.who', {}, h('strong', {}, opp?.name ?? ''), h('small', {}, view.size === 8 ? 'Bataille rapide · 8 × 8' : 'Bataille navale')),
+      h('span.who', {}, h('strong', {}, opp?.name ?? ''), h('small', {}, `寿司 · ${view.size === 8 ? 'Apéro rapide 8 × 8' : 'Sushi maritime'}`)),
     ),
     iconButton('menu', 'Menu', () => set({ menu: true })),
   );

@@ -1,13 +1,35 @@
-/* Bataille navale : même thème sombre épuré, eau bleu nuit, navires en aplats de couleur. */
+/* Sushi maritime : vagues seigaiha en fond, plateaux laqués noir et vermillon, makis en aplats,
+   baguettes animées. */
+
+body[data-game='sushi'] {
+  --vermillion: #e5483b;
+  --rim: #9e2f27;
+  --tray: #1f1618;
+  --rice: #fbf6ea;
+  --nori: #2c4434;
+  --salmon: #f4845f;
+  --hit: #e5483b;
+  --paper: #f6efe1;
+  --mincho: 'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif JP', Georgia, serif;
+  background-color: #13151b;
+  background-image:
+    radial-gradient(circle at 50% 100%, #13151b 0 8px, rgb(120 150 220 / 0.07) 8px 10px, #13151b 10px 16px, rgb(120 150 220 / 0.07) 16px 18px, #13151b 18px 24px, rgb(120 150 220 / 0.07) 24px 26px, #13151b 26px 32px, transparent 32px),
+    radial-gradient(circle at 50% 100%, #13151b 0 8px, rgb(120 150 220 / 0.07) 8px 10px, #13151b 10px 16px, rgb(120 150 220 / 0.07) 16px 18px, #13151b 18px 24px, rgb(120 150 220 / 0.07) 24px 26px, #13151b 26px 32px, transparent 32px);
+  background-size: 64px 32px;
+  background-position:
+    0 0,
+    32px 16px;
+}
+body[data-game='sushi'] button.primary {
+  background: var(--vermillion);
+  color: #fff;
+}
 
 .naval {
   min-height: 100dvh;
   gap: 12px;
   padding-top: calc(12px + var(--safe-top));
   padding-bottom: calc(16px + var(--safe-bottom));
-  --water: rgb(91 140 255 / 0.12);
-  --water-line: rgb(91 140 255 / 0.22);
-  --hit: #f26b6b;
 }
 
 .topbar {
@@ -43,8 +65,9 @@
   line-height: 1.15;
 }
 .who small {
-  color: var(--ink-dim);
+  color: #d9837a;
   font-size: 0.78rem;
+  letter-spacing: 0.04em;
 }
 
 .status {
@@ -54,11 +77,11 @@
   text-align: center;
   padding: 8px 12px;
   border-radius: 12px;
-  background: var(--surface);
+  background: rgb(26 29 35 / 0.92);
   border: 1px solid var(--line);
 }
 .status.mine {
-  border-color: var(--ink);
+  border-color: var(--vermillion);
 }
 .status small {
   color: var(--ink-dim);
@@ -79,10 +102,25 @@
   flex: 1;
 }
 
-/* ------------------------------------------------------------ grille */
+/* ------------------------------------------------------------ plateau laqué */
+
+.tray {
+  padding: 6px;
+  border-radius: 14px;
+  background: linear-gradient(170deg, #2a1d20, var(--tray) 60%);
+  border: 2px solid var(--rim);
+  box-shadow:
+    0 12px 30px rgb(0 0 0 / 0.5),
+    inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+.tray.small {
+  padding: 3px;
+  border-width: 1.5px;
+  border-radius: 9px;
+}
 
 .grid {
-  --w: min(calc(100vw - 32px), 440px);
+  --w: min(calc(100vw - 48px), 424px);
   display: grid;
   width: var(--w);
   aspect-ratio: 1;
@@ -97,13 +135,13 @@
 }
 .phase-battle .grid.big,
 .phase-over .grid.big {
-  --w: min(calc(100vw - 32px), 440px, 50dvh);
+  --w: min(calc(100vw - 48px), 424px, 48dvh);
 }
 .phase-placement .grid.big {
-  --w: min(calc(100vw - 32px), 440px, 62dvh);
+  --w: min(calc(100vw - 48px), 424px, 60dvh);
 }
 .grid.small {
-  --w: min(46vw, 210px, 27dvh);
+  --w: min(44vw, 200px, 26dvh);
   gap: 1px;
 }
 
@@ -111,7 +149,8 @@
   display: grid;
   place-items: center;
   font-size: 0.62rem;
-  color: var(--ink-dim);
+  color: #c7a98a;
+  opacity: 0.75;
   font-variant-numeric: tabular-nums;
 }
 
@@ -120,8 +159,8 @@
   padding: 0;
   border: 0;
   border-radius: 4px;
-  background: var(--water);
-  box-shadow: inset 0 0 0 1px var(--water-line);
+  background: rgb(255 240 220 / 0.045);
+  box-shadow: inset 0 0 0 1px rgb(255 240 220 / 0.07);
   transition: background 0.15s;
 }
 .cell:disabled {
@@ -130,7 +169,7 @@
 }
 .cell:active:not(:disabled) {
   transform: none;
-  background: rgb(91 140 255 / 0.3);
+  background: rgb(229 72 59 / 0.25);
 }
 .grid.small .cell {
   border-radius: 2px;
@@ -139,55 +178,128 @@
   cursor: crosshair;
 }
 .cell.known {
-  background: transparent;
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.05);
+  background: rgb(0 0 0 / 0.25);
+  box-shadow: none;
 }
 .cell.aim {
-  background: rgb(236 238 242 / 0.22);
+  background: rgb(229 72 59 / 0.3);
   box-shadow:
-    inset 0 0 0 2px var(--ink),
-    0 0 0 3px rgb(236 238 242 / 0.15);
-  animation: pulse 1s ease-in-out infinite alternate;
+    inset 0 0 0 2px var(--vermillion),
+    0 0 0 3px rgb(229 72 59 / 0.2);
+  animation: pulse 0.9s ease-in-out infinite alternate;
 }
 @keyframes pulse {
   to {
-    background: rgb(236 238 242 / 0.08);
+    background: rgb(229 72 59 / 0.08);
   }
 }
 
-/* navires : une bande arrondie qui couvre leurs cases (dessinée par ::before, les marges en %
-   des éléments de grille se calculant sur la largeur de la grille) */
-.ship {
+/* ------------------------------------------------------------ pièces de sushi */
+
+.piece {
+  position: relative;
+  display: flex;
   pointer-events: none;
   z-index: 1;
-  position: relative;
 }
-.ship::before {
+.piece.v {
+  flex-direction: column;
+}
+.slice {
+  flex: 1;
+  margin: 2px;
+  border-radius: 50%;
+  box-shadow:
+    0 2px 0 rgb(0 0 0 / 0.35),
+    0 0 0 1px rgb(255 255 255 / 0.12);
+}
+.grid.small .slice {
+  margin: 1px;
+  box-shadow: none;
+}
+/* maki saumon : riz, cœur de saumon, nori */
+.p-maki .slice {
+  background: radial-gradient(circle, var(--salmon) 0 22%, var(--rice) 24% 57%, var(--nori) 60%);
+}
+/* california roll : œufs de poisson orangés dehors, avocat et surimi dedans */
+.p-cali .slice {
+  background:
+    radial-gradient(circle at 46% 46%, #8fcf6e 0 10%, transparent 11%),
+    radial-gradient(circle at 56% 56%, #ff9d8a 0 10%, transparent 11%),
+    radial-gradient(circle, var(--rice) 0 56%, #f2894e 59%);
+}
+/* futomaki : gros rouleau garni (omelette, saumon, concombre) */
+.p-futo .slice {
+  background:
+    radial-gradient(circle at 40% 42%, #f6d55c 0 12%, transparent 13%),
+    radial-gradient(circle at 61% 46%, var(--salmon) 0 11%, transparent 12%),
+    radial-gradient(circle at 48% 63%, #7cc46a 0 10%, transparent 11%),
+    radial-gradient(circle, var(--rice) 0 63%, var(--nori) 66%);
+}
+/* rouleau de printemps : un seul rouleau doré, marques de friture */
+.p-spring::before {
   content: '';
   position: absolute;
   border-radius: 999px;
-  background: var(--c);
-  box-shadow: inset 0 -3px 0 rgb(0 0 0 / 0.18);
-  transition: background 0.2s;
-}
-.ship.h::before {
-  inset: 18% 4px;
-}
-.ship.v::before {
-  inset: 4px 18%;
-}
-.grid.small .ship.h::before {
-  inset: 14% 1px;
-  box-shadow: none;
-}
-.grid.small .ship.v::before {
-  inset: 1px 14%;
-  box-shadow: none;
-}
-.ship.selected::before {
   box-shadow:
-    0 0 0 2px var(--bg),
-    0 0 0 4px var(--ink);
+    0 2px 0 rgb(0 0 0 / 0.35),
+    inset 0 0 0 1px rgb(90 45 10 / 0.35);
+}
+.p-spring.h::before {
+  inset: 17% 3px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 9px, rgb(130 70 15 / 0.28) 9px 11px),
+    linear-gradient(#f7d58f, #dd9a3a 65%, #b8741f);
+}
+.p-spring.v::before {
+  inset: 3px 17%;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 9px, rgb(130 70 15 / 0.28) 9px 11px),
+    linear-gradient(90deg, #f7d58f, #dd9a3a 65%, #b8741f);
+}
+/* nigiri : boule de riz et tranche de saumon striée */
+.p-nigiri::before,
+.p-nigiri::after {
+  content: '';
+  position: absolute;
+}
+.p-nigiri::before {
+  background: var(--rice);
+  border-radius: 45%;
+  box-shadow: 0 2px 0 rgb(0 0 0 / 0.35);
+}
+.p-nigiri::after {
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgb(150 50 20 / 0.25);
+}
+.p-nigiri.h::before {
+  inset: 30% 6px 12%;
+}
+.p-nigiri.h::after {
+  inset: 14% 2px 38%;
+  background: repeating-linear-gradient(115deg, var(--salmon) 0 7px, #ffd3bf 7px 9px);
+}
+.p-nigiri.v::before {
+  inset: 6px 12% 6px 30%;
+}
+.p-nigiri.v::after {
+  inset: 2px 38% 2px 14%;
+  background: repeating-linear-gradient(25deg, var(--salmon) 0 7px, #ffd3bf 7px 9px);
+}
+.grid.small .p-spring.h::before,
+.grid.small .p-nigiri.h::after {
+  inset-inline: 1px;
+}
+.grid.small .p-spring.v::before,
+.grid.small .p-nigiri.v::after {
+  inset-block: 1px;
+}
+
+.ship {
+  transition: opacity 0.2s;
+}
+.ship.selected {
+  filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 1px #fff);
   animation: lift 0.18s ease-out;
 }
 @keyframes lift {
@@ -196,25 +308,20 @@
   }
 }
 .grid.placing {
-  touch-action: none; /* le doigt déplace le navire, pas la page */
+  touch-action: none; /* le doigt déplace la pièce, pas la page */
 }
 .ship.dragging {
   z-index: 3;
+  transform: scale(1.06);
+  filter: drop-shadow(0 8px 8px rgb(0 0 0 / 0.6)) drop-shadow(0 0 1px #fff);
 }
-.ship.dragging::before {
-  box-shadow:
-    0 0 0 2px var(--bg),
-    0 0 0 4px var(--ink),
-    0 8px 18px rgb(0 0 0 / 0.5);
-  transform: scale(1.04);
+.ship.dragging.invalid {
+  opacity: 0.6;
+  filter: drop-shadow(0 0 4px var(--vermillion)) drop-shadow(0 0 2px var(--vermillion));
 }
-.ship.dragging.invalid::before {
-  background: var(--hit);
-  opacity: 0.75;
-}
-.ship.sunk::before {
-  background: color-mix(in srgb, var(--c) 55%, var(--bg));
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--hit) 55%, transparent);
+.ship.sunk {
+  opacity: 0.8;
+  filter: saturate(0.75);
 }
 .enemy .ship {
   animation: surface 0.5s ease-out;
@@ -226,65 +333,359 @@
   }
 }
 
-/* tirs */
+/* ------------------------------------------------------------ coups de baguettes */
+
 .mark {
   pointer-events: none;
   z-index: 2;
+  position: relative;
   display: grid;
   place-items: center;
-  position: relative;
 }
-.mark::after {
-  content: '';
-  border-radius: 50%;
+.mark .morsel {
+  width: 82%;
+  height: 82%;
 }
+/* raté : un grain de riz tombé sur le plateau */
 .mark.miss::after {
+  content: '';
   width: 26%;
-  aspect-ratio: 1;
-  background: var(--ink-dim);
-  opacity: 0.7;
+  height: 13%;
+  border-radius: 50%;
+  background: var(--rice);
+  opacity: 0.6;
+  transform: rotate(-30deg);
 }
+/* touché, pièce encore inconnue : le morceau découvert, déjà croqué */
 .mark.hit::after {
+  content: '';
+  position: absolute;
+  top: -4%;
+  right: -4%;
+  width: 44%;
+  height: 44%;
+  border-radius: 50%;
+  background: #241a1c;
+}
+/* bouchée dans une pièce visible : un croc en forme de morsure, avec deux miettes */
+.mark.eaten::after {
+  content: '';
+  position: absolute;
+  top: 2%;
+  right: 2%;
   width: 52%;
-  aspect-ratio: 1;
-  background: var(--hit);
-  box-shadow: 0 0 10px rgb(242 107 107 / 0.6);
+  height: 52%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 25% 80%, var(--rice) 0 7%, transparent 8%),
+    radial-gradient(circle at 70% 30%, var(--rice) 0 6%, transparent 7%),
+    #241a1c;
+  box-shadow: -2px 2px 0 rgb(0 0 0 / 0.25);
+}
+.grid.small .mark.eaten::after {
+  width: 58%;
+  height: 58%;
+  top: -4%;
+  right: -4%;
 }
 .mark.recent {
   border-radius: 4px;
-  box-shadow: inset 0 0 0 2px var(--accent);
+  box-shadow: inset 0 0 0 2px rgb(229 72 59 / 0.9);
 }
-.mark.boom::after {
-  animation: pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1);
-}
-.mark.boom::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 2px solid var(--ink);
-  animation: ripple 0.8s ease-out forwards;
-}
-.mark.hit.boom::before {
-  border-color: var(--hit);
+.mark.boom::after,
+.mark.boom .morsel {
+  animation: pop 0.45s 0.45s cubic-bezier(0.3, 1.6, 0.5, 1) backwards;
 }
 @keyframes pop {
   from {
     transform: scale(0);
   }
 }
-@keyframes ripple {
-  from {
-    transform: scale(0.3);
+
+/* baguettes : les pointes se rejoignent au centre de la case visée */
+.chop {
+  --c: max(var(--cell), 30px);
+  position: fixed;
+  z-index: 24;
+  pointer-events: none;
+  width: calc(var(--c) * 2.6);
+  height: calc(var(--c) * 4.4);
+  margin-left: calc(var(--c) * -1.3);
+  margin-top: calc(var(--c) * -4.4);
+  transform-origin: 50% 100%;
+  animation: 1.35s cubic-bezier(0.45, 0, 0.3, 1) both;
+}
+.chop .sticks,
+.chop svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.chop svg {
+  filter: drop-shadow(4px 8px 6px rgb(0 0 0 / 0.5));
+  overflow: visible;
+}
+.stick {
+  transform-box: view-box;
+  animation: 1.35s ease both;
+}
+.stick.l {
+  transform-origin: 43px 0;
+}
+.stick.r {
+  transform-origin: 77px 0;
+}
+.chop .morsel {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: calc(var(--c) * 0.8);
+  height: calc(var(--c) * 0.8);
+  margin: 0 0 calc(var(--c) * -0.4) calc(var(--c) * -0.4);
+  z-index: -1;
+  animation: 1.35s ease both;
+}
+.chop .splash {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: var(--c);
+  height: var(--c);
+  margin: 0 0 calc(var(--c) * -0.5) calc(var(--c) * -0.5);
+  border-radius: 50%;
+  border: 2px solid var(--rice);
+  opacity: 0;
+  animation: splash 1.35s ease-out both;
+}
+
+/* attraper en pince puis emporter */
+.v-pinch {
+  animation-name: chop-pinch;
+}
+.v-pinch .stick.l {
+  animation-name: open-l;
+}
+.v-pinch .stick.r {
+  animation-name: open-r;
+}
+.v-pinch .morsel {
+  animation-name: morsel-late;
+}
+@keyframes chop-pinch {
+  0% {
+    transform: translate(90px, -120px) rotate(25deg);
+    opacity: 0;
+  }
+  28%,
+  52% {
+    transform: translate(0, 0) rotate(10deg);
     opacity: 1;
   }
-  to {
-    transform: scale(2.4);
+  100% {
+    transform: translate(60px, -220px) rotate(18deg);
+    opacity: 0;
+  }
+}
+/* piquer dedans (très mal élevé au Japon) */
+.v-stab {
+  animation-name: chop-stab;
+}
+.v-stab .morsel {
+  animation-name: morsel-early;
+}
+@keyframes chop-stab {
+  0% {
+    transform: translate(0, -180px);
+    opacity: 0;
+  }
+  20% {
+    transform: translate(0, 8px);
+    opacity: 1;
+  }
+  27% {
+    transform: translate(0, 0);
+  }
+  35% {
+    transform: rotate(-6deg);
+  }
+  43% {
+    transform: rotate(6deg);
+  }
+  52% {
+    transform: rotate(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(0, -240px);
+    opacity: 0;
+  }
+}
+/* arriver de côté, saisir, filer */
+.v-swoop {
+  animation-name: chop-swoop;
+}
+.v-swoop .stick.l {
+  animation-name: open-l;
+}
+.v-swoop .stick.r {
+  animation-name: open-r;
+}
+.v-swoop .morsel {
+  animation-name: morsel-late;
+}
+@keyframes chop-swoop {
+  0% {
+    transform: translate(-150px, -30px) rotate(-45deg);
+    opacity: 0;
+  }
+  30%,
+  52% {
+    transform: translate(0, 0) rotate(-12deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-90px, -210px) rotate(-30deg);
+    opacity: 0;
+  }
+}
+/* raté : toc toc sur le plateau vide */
+.v-poke {
+  animation-name: chop-poke;
+}
+@keyframes chop-poke {
+  0% {
+    transform: translate(0, -160px) rotate(6deg);
+    opacity: 0;
+  }
+  25%,
+  41%,
+  57% {
+    transform: translate(0, 0) rotate(6deg);
+    opacity: 1;
+  }
+  33%,
+  49% {
+    transform: translate(0, -16px) rotate(6deg);
+  }
+  100% {
+    transform: translate(30px, -220px) rotate(14deg);
+    opacity: 0;
+  }
+}
+/* raté : clac clac dans le vide */
+.v-clack {
+  animation-name: chop-clack;
+}
+.v-clack .stick.l {
+  animation-name: clack-l;
+}
+.v-clack .stick.r {
+  animation-name: clack-r;
+}
+@keyframes chop-clack {
+  0% {
+    transform: translate(80px, -120px) rotate(22deg);
+    opacity: 0;
+  }
+  25%,
+  75% {
+    transform: translate(0, -10px) rotate(8deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(90px, -190px) rotate(22deg);
+    opacity: 0;
+  }
+}
+@keyframes open-l {
+  0%,
+  30% {
+    transform: rotate(-7deg);
+  }
+  42%,
+  100% {
+    transform: rotate(0);
+  }
+}
+@keyframes open-r {
+  0%,
+  30% {
+    transform: rotate(7deg);
+  }
+  42%,
+  100% {
+    transform: rotate(0);
+  }
+}
+@keyframes clack-l {
+  0%,
+  25%,
+  41%,
+  57%,
+  73%,
+  100% {
+    transform: rotate(0);
+  }
+  33%,
+  49%,
+  65% {
+    transform: rotate(-8deg);
+  }
+}
+@keyframes clack-r {
+  0%,
+  25%,
+  41%,
+  57%,
+  73%,
+  100% {
+    transform: rotate(0);
+  }
+  33%,
+  49%,
+  65% {
+    transform: rotate(8deg);
+  }
+}
+@keyframes morsel-late {
+  0%,
+  40% {
+    opacity: 0;
+  }
+  44%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes morsel-early {
+  0%,
+  22% {
+    opacity: 0;
+  }
+  26%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes splash {
+  0%,
+  24% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  26% {
+    opacity: 0.8;
+  }
+  45% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+  100% {
     opacity: 0;
   }
 }
 
-/* ------------------------------------------------------------ flottes */
+/* ------------------------------------------------------------ liste des pièces */
 
 ul.fleet {
   list-style: none;
@@ -302,22 +703,32 @@ ul.fleet li {
   align-items: center;
   gap: 6px;
 }
-.pips {
-  display: flex;
-  gap: 2px;
+.mini {
+  display: inline-block;
+  width: calc(var(--len) * 11px);
+  height: 11px;
 }
-.pips i {
-  width: 7px;
-  height: 7px;
-  border-radius: 2px;
-  background: var(--c);
+.mini .piece {
+  width: 100%;
+  height: 100%;
+}
+.mini .slice {
+  margin: 0.5px;
+  box-shadow: none;
+}
+.mini .p-spring.h::before,
+.mini .p-nigiri.h::after {
+  inset-inline: 0;
+}
+.mini .p-nigiri.h::before {
+  inset-inline: 2px;
 }
 ul.fleet li.down {
   text-decoration: line-through;
-  opacity: 0.45;
+  opacity: 0.4;
 }
-ul.fleet li.down .pips i {
-  background: var(--hit);
+ul.fleet li.down .mini {
+  filter: grayscale(1);
 }
 
 .home-waters {
@@ -356,28 +767,54 @@ ul.fleet li.down .pips i {
   transform: translate(-50%, -50%);
   z-index: 25;
   pointer-events: none;
-  padding: 12px 22px;
-  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px 10px 12px;
+  border-radius: 6px;
   font-weight: 800;
-  font-size: 1.15rem;
+  font-size: 1.08rem;
   white-space: nowrap;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  box-shadow: 0 10px 30px rgb(0 0 0 / 0.5);
-  animation: flash 2s ease-out forwards;
+  max-width: 94vw;
+  color: #1d1515;
+  background: var(--paper);
+  border-left: 5px solid var(--vermillion);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 0.55);
+  animation: flash 2.1s ease-out forwards;
 }
-.flash.hit {
-  border-color: var(--hit);
+.flash > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hanko {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  background: var(--vermillion);
+  color: #fff;
+  font-family: var(--mincho);
+  font-size: 1.15rem;
+  transform: rotate(-8deg);
+}
+.flash.miss .hanko {
+  background: #6b6f78;
 }
 .flash.sunk {
-  background: var(--hit);
+  background: var(--vermillion);
   color: #fff;
-  border-color: transparent;
-  font-size: 1.3rem;
+  border-left-color: #1d1515;
+  font-size: 1.2rem;
+}
+.flash.sunk .hanko {
+  background: var(--paper);
+  color: var(--vermillion);
 }
 .flash.theirs {
   top: calc(64px + var(--safe-top));
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 700;
 }
 @keyframes flash {
@@ -386,7 +823,7 @@ ul.fleet li.down .pips i {
     transform: translate(-50%, -40%) scale(0.9);
   }
   12%,
-  75% {
+  78% {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
   }
@@ -394,6 +831,18 @@ ul.fleet li.down .pips i {
     opacity: 0;
     transform: translate(-50%, -60%);
   }
+}
+
+.kanji {
+  margin: 0;
+  text-align: center;
+  font-family: var(--mincho);
+  font-size: 2.2rem;
+  letter-spacing: 0.12em;
+  color: var(--vermillion);
+}
+body[data-game='sushi'] .sheet h2 {
+  text-align: center;
 }
 
 .floating {
@@ -407,4 +856,10 @@ ul.fleet li.down .pips i {
   text-align: center;
   justify-content: center;
   min-height: 100dvh;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chop {
+    display: none;
+  }
 }

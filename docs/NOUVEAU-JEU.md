@@ -32,7 +32,7 @@ Règles d'or :
 - `view` ne doit rien divulguer de secret (navires adverses non touchés, cartes cachées…).
 - `status().awaiting` alimente le badge « À toi ! » de l'accueil ; `result` alimente les scores.
 
-Exemple complet : `server/games/bataille.js` + `public/bataille/`.
+Exemple complet (Sushi maritime) : `server/games/bataille.js` + `public/bataille/`.
 
 Puis ajoutez le module dans `MODULES` de `server/games/index.js` et retirez le jeu de la liste
 `upcoming` de `public/arcade.json`.

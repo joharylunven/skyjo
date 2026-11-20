@@ -1,22 +1,23 @@
-// Bataille navale : moteur pur et déterministe, partagé par le serveur (arbitre) et la page
+// Sushi maritime (bataille navale aux sushis) : moteur pur et déterministe, partagé par le serveur (arbitre) et la page
 // (aperçu du placement). Aucun accès au DOM ni au réseau.
 //
 // Phases : placement (chacun place sa flotte en secret) → battle (tirs) → over.
-// Les navires ne peuvent ni se chevaucher ni se toucher, même en diagonale.
+// Les pièces (« navires ») ne peuvent ni se chevaucher ni se toucher, même en diagonale.
+// Les identifiants internes restent ceux de la bataille navale (compatibilité des parties).
 
 export const FLEETS = {
   10: [
-    { id: 'porte-avions', name: 'Porte-avions', len: 5 },
-    { id: 'croiseur', name: 'Croiseur', len: 4 },
-    { id: 'contre-torpilleur', name: 'Contre-torpilleur', len: 3 },
-    { id: 'sous-marin', name: 'Sous-marin', len: 3 },
-    { id: 'torpilleur', name: 'Torpilleur', len: 2 },
+    { id: 'porte-avions', name: 'Futomaki', len: 5 },
+    { id: 'croiseur', name: 'Rouleau de printemps', len: 4 },
+    { id: 'contre-torpilleur', name: 'California roll', len: 3 },
+    { id: 'sous-marin', name: 'Maki saumon', len: 3 },
+    { id: 'torpilleur', name: 'Nigiri', len: 2 },
   ],
   8: [
-    { id: 'croiseur', name: 'Croiseur', len: 4 },
-    { id: 'contre-torpilleur', name: 'Contre-torpilleur', len: 3 },
-    { id: 'sous-marin', name: 'Sous-marin', len: 3 },
-    { id: 'torpilleur', name: 'Torpilleur', len: 2 },
+    { id: 'croiseur', name: 'Rouleau de printemps', len: 4 },
+    { id: 'contre-torpilleur', name: 'California roll', len: 3 },
+    { id: 'sous-marin', name: 'Maki saumon', len: 3 },
+    { id: 'torpilleur', name: 'Nigiri', len: 2 },
   ],
 };
 
@@ -35,7 +36,7 @@ export function shipCells(ship, fleet) {
 
 /** Vérifie une flotte. Renvoie null si elle est valable, sinon un message. */
 export function validateFleet(ships, size, fleet) {
-  if (!Array.isArray(ships) || ships.length !== fleet.length) return 'Il faut placer toute la flotte.';
+  if (!Array.isArray(ships) || ships.length !== fleet.length) return 'Il faut dresser tout le plateau.';
   const ids = new Set();
   const taken = new Map(); // "x,y" -> id
   for (const s of ships) {
@@ -43,11 +44,11 @@ export function validateFleet(ships, size, fleet) {
     ids.add(s.id);
     if (!Number.isInteger(s.x) || !Number.isInteger(s.y) || !['h', 'v'].includes(s.dir)) return 'Position invalide.';
     for (const [x, y] of shipCells(s, fleet)) {
-      if (x < 0 || y < 0 || x >= size || y >= size) return 'Un navire dépasse de la grille.';
+      if (x < 0 || y < 0 || x >= size || y >= size) return 'Une pièce dépasse du plateau.';
       for (let dx = -1; dx <= 1; dx++)
         for (let dy = -1; dy <= 1; dy++) {
           const other = taken.get(`${x + dx},${y + dy}`);
-          if (other && other !== s.id) return 'Les navires ne doivent pas se toucher.';
+          if (other && other !== s.id) return 'Les pièces ne doivent pas se toucher.';
         }
     }
     for (const [x, y] of shipCells(s, fleet)) taken.set(`${x},${y}`, s.id);
@@ -137,8 +138,8 @@ export function applyAction(state, action, playerId) {
 
   switch (action.type) {
     case 'place': {
-      if (s.phase !== 'placement') return fail('wrong_phase', 'La bataille a déjà commencé.');
-      if (player.ships) return fail('already_ready', 'Votre flotte est déjà en place.');
+      if (s.phase !== 'placement') return fail('wrong_phase', 'Le repas a déjà commencé.');
+      if (player.ships) return fail('already_ready', 'Votre plateau est déjà dressé.');
       const ships = Array.isArray(action.ships) ? action.ships.map((x) => ({ id: x?.id, x: x?.x, y: x?.y, dir: x?.dir })) : null;
       const problem = validateFleet(ships, s.size, s.fleet);
       if (problem) return fail('bad_fleet', problem);
@@ -153,17 +154,17 @@ export function applyAction(state, action, playerId) {
       return { state: s, events };
     }
     case 'unplace': {
-      if (s.phase !== 'placement') return fail('wrong_phase', 'La bataille a déjà commencé.');
-      if (!player.ships) return fail('not_ready', 'Votre flotte n’est pas encore en place.');
+      if (s.phase !== 'placement') return fail('wrong_phase', 'Le repas a déjà commencé.');
+      if (!player.ships) return fail('not_ready', 'Votre plateau n’est pas encore dressé.');
       player.ships = null;
       return { state: s, events: [{ type: 'unplaced', player: me }] };
     }
     case 'fire': {
-      if (s.phase !== 'battle') return fail('wrong_phase', s.phase === 'placement' ? 'Les flottes ne sont pas encore en place.' : 'La partie est terminée.');
+      if (s.phase !== 'battle') return fail('wrong_phase', s.phase === 'placement' ? 'Les plateaux ne sont pas encore dressés.' : 'La partie est terminée.');
       if (s.turn !== me) return fail('not_your_turn', 'Ce n’est pas votre tour.');
       const { x, y } = action;
       if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= s.size || y >= s.size) return fail('bad_cell', 'Case invalide.');
-      if (player.shots.some((t) => t.x === x && t.y === y)) return fail('already_shot', 'Vous avez déjà tiré ici.');
+      if (player.shots.some((t) => t.x === x && t.y === y)) return fail('already_shot', 'Vous avez déjà piqué ici.');
       const hitsSoFar = player.shots.filter((t) => t.r !== 'miss');
       const res = resolveShot(enemy.ships, hitsSoFar, s.fleet, x, y);
       player.shots.push({ x, y, r: res.result, ...(res.ship ? { ship: res.ship } : {}) });
@@ -195,7 +196,8 @@ export function viewFor(state, playerId) {
     phase: state.phase,
     size: state.size,
     rule: state.rule,
-    fleet: state.fleet,
+    // noms toujours à jour (les parties commencées avant un renommage gardent leurs pièces)
+    fleet: state.fleet.map((f) => ({ ...f, name: FLEETS[state.size]?.find((x) => x.id === f.id)?.name ?? f.name })),
     me,
     turn: state.turn,
     winner: state.winner,

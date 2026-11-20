@@ -25,7 +25,7 @@ function seeded(n) {
 test('validation de flotte : bords, chevauchements, contact', () => {
   const fleet = FLEETS[10];
   assert.equal(validateFleet(LINES, 10, fleet), null);
-  assert.match(validateFleet(LINES.slice(1), 10, fleet), /toute la flotte/);
+  assert.match(validateFleet(LINES.slice(1), 10, fleet), /tout le plateau/);
   assert.match(validateFleet(LINES.map((s, i) => (i === 0 ? { ...s, x: 6 } : s)), 10, fleet), /dépasse/);
   assert.match(validateFleet(LINES.map((s, i) => (i === 1 ? { ...s, y: 1 } : s)), 10, fleet), /toucher/);
   // contact par un coin

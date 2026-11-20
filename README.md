@@ -1,7 +1,7 @@
 # Jojo Arcade
 
 Salle de jeux **à deux, à distance**, auto-hébergée sur un homelab. Jeux : **Skyjojo** (le jeu
-des 12 cartes) et la **Bataille navale**. Chacun l'installe sur son iPhone comme une appli, choisit son jeu dans le
+des 12 cartes) et **Sushi maritime** (la bataille navale aux sushis). Chacun l'installe sur son iPhone comme une appli, choisit son jeu dans le
 menu, et les scores, victoires et historiques sont conservés sur le serveur.
 
 ## Comment ça marche
@@ -36,19 +36,22 @@ doublé. Partie terminée au seuil choisi (100 par défaut) : le plus petit tota
   Double, Espion). Cartes et couleurs : `public/skyjojo/config/` ; règles spéciales :
   `public/skyjojo/addons/` (voir [docs/ADDONS.md](docs/ADDONS.md)).
 
-## Bataille navale
+## Sushi maritime 🍣
 
-Chacun place sa flotte en secret (bouton « Mélanger » pour un placement au hasard ; toucher un navire
-au doigt pour le déplacer, le toucher deux fois pour le pivoter). Les navires ne se
-touchent pas, même en diagonale. On tire ensuite à tour de rôle : toucher une case pour viser, la
-toucher encore (ou « Feu ! ») pour tirer. Dans l'eau, touché, coulé ; l'eau autour d'un navire coulé
-est grisée. Le premier qui coule toute la flotte adverse gagne.
+La bataille navale de nos parties en vrai : les bateaux sont des sushis et ce qu'on touche, on le
+mange. Chacun dresse son plateau en secret : **futomaki** (5), **rouleau de printemps** (4),
+**california roll** (3), **maki saumon** (3), **nigiri** (2). On fait glisser une pièce au doigt
+pour la déplacer, on la touche deux fois pour la tourner ; les pièces ne se touchent pas, même en
+diagonale. Puis, à tour de rôle, on plante ses baguettes dans une case d'en face : rien dans
+l'assiette, une bouchée (on découvre de quelle pièce), ou la pièce entière engloutie. Les baguettes
+sont animées (elles pincent le morceau, piquent dedans, ou claquent dans le vide). Le premier qui
+dévore tout le plateau d'en face gagne.
 
-- Options : grille **10 × 10** (porte-avions 5, croiseur 4, contre-torpilleur 3, sous-marin 3,
-  torpilleur 2) ou **8 × 8** rapide (sans porte-avions) ; « chacun son tour » ou « touché : on
-  rejoue ».
-- Le serveur ne révèle jamais un navire adverse avant qu'il soit coulé (toute la flotte apparaît en
-  fin de partie). Moteur : `public/bataille/engine.js`, module serveur : `server/games/bataille.js`.
+- Options : plateau **10 × 10** (5 pièces) ou **8 × 8** apéro rapide (sans futomaki) ; « chacun son
+  tour » ou « miam : on reprend une bouchée ».
+- Le serveur ne révèle jamais une pièce adverse avant qu'elle soit engloutie (tout le plateau
+  apparaît en fin de partie). Moteur : `public/bataille/engine.js`, module serveur :
+  `server/games/bataille.js` (l'identifiant interne reste `bataille`).
 
 ## Développer en local
 
