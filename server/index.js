@@ -105,7 +105,10 @@ export async function startServer({ port = 8080, dataDir, inviteCode, hubName = 
       return json(res, 200, matches.summary(m, me.id));
     }
     if (path === '/api/stats' && method === 'GET') return json(res, 200, matches.stats(needMe().id));
-    if (path === '/api/push' && method === 'GET') return json(res, 200, { publicKey: push.publicKey, devices: push.subs.filter((s) => s.profileId === needMe().id).length });
+    if (path === '/api/push' && method === 'GET') {
+      const { id } = needMe();
+      return json(res, 200, { publicKey: push.publicKey, devices: push.subs.filter((s) => s.profileId === id).length });
+    }
     if (path === '/api/push/subscribe' && method === 'POST') {
       const ok = push.subscribe(needMe().id, (await readBody(req)).subscription);
       return json(res, ok ? 200 : 400, ok ? { ok } : { error: 'Abonnement invalide.' });
