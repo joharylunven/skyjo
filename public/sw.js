@@ -2,7 +2,7 @@
 // du serveur). Réseau d'abord pour toujours avoir la dernière version, cache en secours.
 // L'API et le WebSocket ne passent jamais par le cache.
 
-const VERSION = 'arcade-v5';
+const VERSION = 'arcade-v6';
 
 const PRECACHE = [
   '/',
@@ -20,6 +20,13 @@ const PRECACHE = [
   '/icons/icon.svg',
   '/index.html',
   '/manifest.webmanifest',
+  '/minigolf/courses.js',
+  '/minigolf/decor.js',
+  '/minigolf/engine.js',
+  '/minigolf/index.html',
+  '/minigolf/main.js',
+  '/minigolf/render.js',
+  '/minigolf/style.css',
   '/shared/api.js',
   '/shared/base.css',
   '/shared/dom.js',

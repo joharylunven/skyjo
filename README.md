@@ -1,7 +1,7 @@
 # Jojo Arcade
 
 Salle de jeux **à deux, à distance**, auto-hébergée sur un homelab. Jeux : **Skyjojo** (le jeu
-des 12 cartes) et **Sushi maritime** (la bataille navale aux sushis). Chacun l'installe sur son iPhone comme une appli, choisit son jeu dans le
+des 12 cartes), **Sushi maritime** (la bataille navale aux sushis) et le **Minigolf** malgache. Chacun l'installe sur son iPhone comme une appli, choisit son jeu dans le
 menu, et les scores, victoires et historiques sont conservés sur le serveur.
 
 ## Comment ça marche
@@ -52,6 +52,33 @@ dévore tout le plateau d'en face gagne.
 - Le serveur ne révèle jamais une pièce adverse avant qu'elle soit engloutie (tout le plateau
   apparaît en fin de partie). Moteur : `public/bataille/engine.js`, module serveur :
   `server/games/bataille.js` (l'identifiant interne reste `bataille`).
+
+## Minigolf · Tour de Madagascar ⛳
+
+Huit trous dessinés à la main, chacun dans un coin de Madagascar, avec décors animés (makis qui
+remuent la queue et sautillent, caméléons qui changent de couleur et tirent la langue, zébus qui
+broutent, ravenalas et cocotiers dans le vent, pirogue sur le fleuve, crocodiles, flamants,
+papillons comètes) et le drapeau malgache sur chaque trou :
+
+| # | Trou | Par | Particularité |
+|---|------|-----|---------------|
+| 1 | Allée des Baobabs (Morondava) | 2 | troncs de baobabs à contourner |
+| 2 | Tsingy de Bemaraha | 3 | lames de calcaire en zigzag |
+| 3 | Rizières d’Ambalavao | 3 | terrasses en pente, boue, rizière (eau) |
+| 4 | Route Nationale 7 | 3 | charrettes à zébus qui traversent pendant le coup |
+| 5 | Forêt de Ranomafana | 3 | parcours en L, tronc creux qui sert de raccourci |
+| 6 | Fleuve Tsiribihina | 3 | traverser par le pont, sinon plouf |
+| 7 | Plage de Nosy Be | 3 | bunkers de sable, cocotiers, piscine naturelle |
+| 8 | Le Grand Baobab (Tuléar) | 4 | un baobab géant au milieu, pentes, barrière devant le trou |
+
+- **Jouer** : poser le doigt n’importe où, tirer en arrière comme un lance-pierre (la longueur donne
+  la puissance), relâcher. On joue chacun son tour sur le même trou ; eau = +1 coup et retour ;
+  balle ramassée au bout de 6 coups (compte 7). Le meilleur du trou commence le suivant ; le plus
+  petit total gagne.
+- **Parcours** : grand tour (8 trous), balade (4 au hasard) ou express (2 au hasard).
+- Le serveur simule chaque coup (`public/minigolf/engine.js`) et envoie la trajectoire, que les deux
+  téléphones rejouent. Un test vérifie que chaque trou se finit en au plus son par avec un coup
+  parfait (`tests/golf-solver.js`). Ajouter un trou : `public/minigolf/courses.js`.
 
 ## Notifications « à toi de jouer »
 

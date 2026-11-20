@@ -3,8 +3,9 @@
 
 import skyjojo from './skyjojo.js';
 import bataille from './bataille.js';
+import minigolf from './minigolf.js';
 
-const MODULES = [skyjojo, bataille];
+const MODULES = [skyjojo, bataille, minigolf];
 
 export async function loadGames() {
   const games = new Map();

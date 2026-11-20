@@ -1,0 +1,426 @@
+// Parcours « Tour de Madagascar » : 8 trous. Coordonnées dans un plateau de 100 × 160 (y vers le
+// bas), départ en bas, trou en haut.
+//
+//   shape    contour du green (ses bords sont des murs)
+//   blocks   obstacles pleins (polygones) ; bumpers : obstacles ronds (troncs, rochers)
+//   zones    sable (freine), eau (+1 coup, retour à la position d'avant), pente (accélère),
+//            pont (annule l'eau en dessous)
+//   movers   obstacles mobiles (charrette à zébus) ; tunnels : on entre en a, on ressort en b
+//   decor    purement visuel (baobabs, makis, caméléons…)
+
+export const COURSE_NAME = 'Tour de Madagascar';
+
+export const HOLES = [
+  {
+    id: 'baobabs',
+    name: 'Allée des Baobabs',
+    place: 'Morondava',
+    par: 2,
+    theme: 'savane',
+    tee: [50, 140],
+    hole: [50, 30],
+    shape: [
+      [30, 152],
+      [70, 152],
+      [70, 18],
+      [30, 18],
+    ],
+    bumpers: [
+      { x: 41, y: 102, r: 4, style: 'baobab' },
+      { x: 59, y: 78, r: 4, style: 'baobab' },
+      { x: 50, y: 54, r: 3.5, style: 'baobab' },
+    ],
+    decor: [
+      { k: 'baobab', x: 13, y: 36, s: 1.05 },
+      { k: 'baobab', x: 87, y: 52, s: 1.1 },
+      { k: 'baobab', x: 14, y: 78, s: 1.15 },
+      { k: 'baobab', x: 86, y: 96, s: 1 },
+      { k: 'baobab', x: 13, y: 122, s: 1.1 },
+      { k: 'baobab', x: 87, y: 140, s: 1.15 },
+      { k: 'lemur', x: 21, y: 98, s: 0.9 },
+      { k: 'lemur', x: 80, y: 118, s: 0.8 },
+      { k: 'zebu', x: 13, y: 150, s: 0.9 },
+      { k: 'grass', x: 24, y: 60, s: 1 },
+      { k: 'grass', x: 77, y: 24, s: 1 },
+      { k: 'butterfly', x: 80, y: 70, s: 1 },
+    ],
+  },
+  {
+    id: 'tsingy',
+    name: 'Tsingy de Bemaraha',
+    place: 'Bemaraha',
+    par: 3,
+    theme: 'tsingy',
+    tee: [50, 140],
+    hole: [44, 28],
+    shape: [
+      [15, 152],
+      [85, 152],
+      [85, 15],
+      [15, 15],
+    ],
+    blocks: [
+      {
+        style: 'tsingy',
+        poly: [
+          [15, 94],
+          [36, 97],
+          [47, 95],
+          [60, 102],
+          [47, 108],
+          [33, 107],
+          [15, 111],
+        ],
+      },
+      {
+        style: 'tsingy',
+        poly: [
+          [85, 54],
+          [64, 57],
+          [52, 56],
+          [40, 63],
+          [53, 69],
+          [66, 67],
+          [85, 71],
+        ],
+      },
+      {
+        style: 'tsingy',
+        poly: [
+          [62, 30],
+          [70, 23],
+          [69, 36],
+        ],
+      },
+    ],
+    decor: [
+      { k: 'tsingy', x: 7, y: 40, s: 1.1 },
+      { k: 'tsingy', x: 93, y: 30, s: 1 },
+      { k: 'tsingy', x: 7, y: 130, s: 1 },
+      { k: 'tsingy', x: 93, y: 110, s: 1.15 },
+      { k: 'lemur', x: 93, y: 80, s: 0.75, white: true },
+      { k: 'chameleon', x: 7, y: 80, s: 0.8 },
+      { k: 'butterfly', x: 90, y: 140, s: 1 },
+    ],
+  },
+  {
+    id: 'rizieres',
+    name: 'Rizières d’Ambalavao',
+    place: 'Hautes Terres',
+    par: 3,
+    theme: 'rizieres',
+    tee: [50, 140],
+    hole: [36, 30],
+    shape: [
+      [20, 152],
+      [80, 152],
+      [80, 15],
+      [20, 15],
+    ],
+    zones: [
+      {
+        type: 'slope',
+        ax: 0,
+        ay: 30,
+        poly: [
+          [20, 100],
+          [80, 100],
+          [80, 118],
+          [20, 118],
+        ],
+      },
+      {
+        type: 'slope',
+        ax: -26,
+        ay: 12,
+        poly: [
+          [20, 56],
+          [80, 56],
+          [80, 72],
+          [20, 72],
+        ],
+      },
+      {
+        type: 'sand',
+        style: 'mud',
+        poly: [
+          [54, 80],
+          [80, 80],
+          [80, 92],
+          [54, 92],
+        ],
+      },
+      {
+        type: 'water',
+        style: 'paddy',
+        poly: [
+          [56, 20],
+          [80, 20],
+          [80, 40],
+          [56, 40],
+        ],
+      },
+    ],
+    decor: [
+      { k: 'hut', x: 9, y: 46, s: 1 },
+      { k: 'hut', x: 91, y: 124, s: 0.9 },
+      { k: 'zebu', x: 9, y: 98, s: 0.85 },
+      { k: 'ravenala', x: 91, y: 70, s: 1 },
+      { k: 'ravenala', x: 9, y: 146, s: 0.9 },
+      { k: 'lemur', x: 91, y: 98, s: 0.75 },
+      { k: 'heron', x: 70, y: 32, s: 0.8 },
+    ],
+  },
+  {
+    id: 'rn7',
+    name: 'Route Nationale 7',
+    place: 'Ambositra',
+    par: 3,
+    theme: 'rn7',
+    tee: [50, 140],
+    hole: [50, 25],
+    shape: [
+      [25, 152],
+      [75, 152],
+      [75, 14],
+      [25, 14],
+    ],
+    bumpers: [
+      { x: 38, y: 34, r: 2.6, style: 'rock' },
+      { x: 62, y: 34, r: 2.6, style: 'rock' },
+    ],
+    movers: [
+      { kind: 'cart', w: 16, h: 7, y: 92, x0: 50, amp: 16, freq: 0.8, phase: 0 },
+      { kind: 'cart', w: 16, h: 7, y: 58, x0: 50, amp: 16, freq: 1.05, phase: 3.1 },
+    ],
+    decor: [
+      { k: 'zebu', x: 12, y: 40, s: 1 },
+      { k: 'zebu', x: 88, y: 120, s: 0.95 },
+      { k: 'baobab', x: 12, y: 80, s: 0.9 },
+      { k: 'hut', x: 88, y: 70, s: 0.9 },
+      { k: 'ravenala', x: 88, y: 28, s: 0.9 },
+      { k: 'lemur', x: 12, y: 132, s: 0.8 },
+      { k: 'grass', x: 12, y: 110, s: 1 },
+    ],
+  },
+  {
+    id: 'ranomafana',
+    name: 'Forêt de Ranomafana',
+    place: 'Ranomafana',
+    par: 3,
+    theme: 'foret',
+    tee: [27, 140],
+    hole: [78, 32],
+    shape: [
+      [10, 152],
+      [45, 152],
+      [45, 60],
+      [90, 60],
+      [90, 15],
+      [10, 15],
+    ],
+    bumpers: [
+      { x: 22, y: 40, r: 3.5, style: 'tree' },
+      { x: 33, y: 76, r: 3, style: 'tree' },
+    ],
+    tunnels: [{ a: [36, 104], b: [58, 40], r: 3 }],
+    decor: [
+      { k: 'jungle', x: 70, y: 100, s: 1.3 },
+      { k: 'jungle', x: 60, y: 140, s: 1.1 },
+      { k: 'jungle', x: 88, y: 150, s: 1 },
+      { k: 'lemur', x: 62, y: 84, s: 1, sifaka: true },
+      { k: 'lemur', x: 84, y: 112, s: 0.85 },
+      { k: 'chameleon', x: 70, y: 125, s: 1 },
+      { k: 'fern', x: 55, y: 110, s: 1 },
+      { k: 'fern', x: 92, y: 80, s: 0.9 },
+      { k: 'butterfly', x: 75, y: 90, s: 1 },
+    ],
+  },
+  {
+    id: 'tsiribihina',
+    name: 'Fleuve Tsiribihina',
+    place: 'Miandrivazo',
+    par: 3,
+    theme: 'riviere',
+    tee: [30, 140],
+    hole: [68, 30],
+    river: [70, 95],
+    shape: [
+      [15, 152],
+      [85, 152],
+      [85, 15],
+      [15, 15],
+    ],
+    zones: [
+      {
+        type: 'water',
+        poly: [
+          [15, 70],
+          [85, 70],
+          [85, 95],
+          [15, 95],
+        ],
+      },
+      {
+        type: 'bridge',
+        poly: [
+          [42, 68],
+          [58, 68],
+          [58, 97],
+          [42, 97],
+        ],
+      },
+    ],
+    bumpers: [{ x: 50, y: 52, r: 2.8, style: 'rock' }],
+    decor: [
+      { k: 'pirogue', x: 0, y: 84, s: 1 },
+      { k: 'croco', x: 26, y: 82, s: 1 },
+      { k: 'croco', x: 76, y: 88, s: 0.9 },
+      { k: 'ravenala', x: 7, y: 40, s: 0.9 },
+      { k: 'ravenala', x: 93, y: 130, s: 0.9 },
+      { k: 'lemur', x: 93, y: 50, s: 0.8 },
+      { k: 'heron', x: 7, y: 120, s: 0.9 },
+    ],
+  },
+  {
+    id: 'nosybe',
+    name: 'Plage de Nosy Be',
+    place: 'Nosy Be',
+    par: 3,
+    theme: 'plage',
+    tee: [50, 140],
+    hole: [42, 36],
+    shape: [
+      [20, 152],
+      [78, 152],
+      [86, 100],
+      [80, 20],
+      [24, 20],
+      [12, 95],
+    ],
+    bumpers: [
+      { x: 66, y: 92, r: 3, style: 'palm' },
+      { x: 32, y: 60, r: 3, style: 'palm' },
+    ],
+    zones: [
+      {
+        type: 'sand',
+        poly: [
+          [50, 30],
+          [72, 34],
+          [70, 50],
+          [52, 46],
+        ],
+      },
+      {
+        type: 'sand',
+        poly: [
+          [28, 88],
+          [52, 82],
+          [56, 98],
+          [34, 104],
+        ],
+      },
+      {
+        type: 'water',
+        style: 'pool',
+        poly: [
+          [62, 58],
+          [78, 56],
+          [80, 70],
+          [64, 72],
+        ],
+      },
+    ],
+    decor: [
+      { k: 'palm', x: 7, y: 60, s: 1 },
+      { k: 'palm', x: 9, y: 140, s: 1.1 },
+      { k: 'palm', x: 92, y: 20, s: 0.9 },
+      { k: 'crab', x: 10, y: 110, s: 1 },
+      { k: 'crab', x: 90, y: 150, s: 0.9 },
+      { k: 'turtle', x: 94, y: 80, s: 1 },
+      { k: 'lemur', x: 8, y: 30, s: 0.75, black: true },
+    ],
+  },
+  {
+    id: 'grand-baobab',
+    name: 'Le Grand Baobab',
+    place: 'Tuléar',
+    par: 4,
+    theme: 'couchant',
+    tee: [50, 142],
+    hole: [50, 28],
+    shape: [
+      [10, 152],
+      [90, 152],
+      [90, 24],
+      [78, 12],
+      [22, 12],
+      [10, 24],
+    ],
+    bumpers: [{ x: 50, y: 82, r: 11, style: 'baobab' }],
+    blocks: [
+      {
+        style: 'wood',
+        poly: [
+          [36, 43],
+          [64, 43],
+          [64, 46.5],
+          [36, 46.5],
+        ],
+      },
+      {
+        style: 'wood',
+        poly: [
+          [10, 112],
+          [24, 104],
+          [25, 107],
+          [10, 116],
+        ],
+      },
+      {
+        style: 'wood',
+        poly: [
+          [90, 112],
+          [76, 104],
+          [75, 107],
+          [90, 116],
+        ],
+      },
+    ],
+    zones: [
+      {
+        type: 'slope',
+        ax: 22,
+        ay: 0,
+        poly: [
+          [10, 50],
+          [26, 50],
+          [26, 64],
+          [10, 64],
+        ],
+      },
+      {
+        type: 'slope',
+        ax: -22,
+        ay: 0,
+        poly: [
+          [74, 50],
+          [90, 50],
+          [90, 64],
+          [74, 64],
+        ],
+      },
+    ],
+    decor: [
+      { k: 'lemur', x: 50, y: 66, s: 0.9 },
+      { k: 'flamingo', x: 5, y: 80, s: 0.9 },
+      { k: 'flamingo', x: 95, y: 92, s: 0.85 },
+      { k: 'zebu', x: 95, y: 140, s: 0.8 },
+      { k: 'chameleon', x: 5, y: 136, s: 0.8 },
+      { k: 'butterfly', x: 20, y: 30, s: 1 },
+    ],
+  },
+];
+
+export const holeById = (id) => HOLES.find((h) => h.id === id);
