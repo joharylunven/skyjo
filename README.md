@@ -1,7 +1,7 @@
 # Jojo Arcade
 
-Salle de jeux **à deux, à distance**, auto-hébergée sur un homelab. Premier jeu : **Skyjojo**
-(le jeu des 12 cartes). Chacun l'installe sur son iPhone comme une appli, choisit son jeu dans le
+Salle de jeux **à deux, à distance**, auto-hébergée sur un homelab. Jeux : **Skyjojo** (le jeu
+des 12 cartes) et la **Bataille navale**. Chacun l'installe sur son iPhone comme une appli, choisit son jeu dans le
 menu, et les scores, victoires et historiques sont conservés sur le serveur.
 
 ## Comment ça marche
@@ -9,7 +9,7 @@ menu, et les scores, victoires et historiques sont conservés sur le serveur.
 ```
 iPhone A ──┐                       ┌── Node (server/) : arbitre des parties, profils, scores
            ├─ HTTPS + WebSocket ───┤      data/db.json : profils, parties, historique
-iPhone B ──┘  (Tailscale Funnel)   └── public/ : accueil + un dossier par jeu (public/skyjojo/)
+iPhone B ──┘  (Tailscale Funnel)   └── public/ : accueil + un dossier par jeu (public/<jeu>/)
 ```
 
 - **Le serveur est l'arbitre** : il fait tourner le moteur du jeu, valide chaque coup et n'envoie à
@@ -35,6 +35,20 @@ doublé. Partie terminée au seuil choisi (100 par défaut) : le plus petit tota
 - Options au lancement : seuil de fin, cartes spéciales (Étoile, 13, et trois variantes : Joker,
   Double, Espion). Cartes et couleurs : `public/skyjojo/config/` ; règles spéciales :
   `public/skyjojo/addons/` (voir [docs/ADDONS.md](docs/ADDONS.md)).
+
+## Bataille navale
+
+Chacun place sa flotte en secret (bouton « Mélanger » pour un placement au hasard ; toucher un navire
+pour le choisir, une case pour le déplacer, le navire à nouveau pour le pivoter). Les navires ne se
+touchent pas, même en diagonale. On tire ensuite à tour de rôle : toucher une case pour viser, la
+toucher encore (ou « Feu ! ») pour tirer. Dans l'eau, touché, coulé ; l'eau autour d'un navire coulé
+est grisée. Le premier qui coule toute la flotte adverse gagne.
+
+- Options : grille **10 × 10** (porte-avions 5, croiseur 4, contre-torpilleur 3, sous-marin 3,
+  torpilleur 2) ou **8 × 8** rapide (sans porte-avions) ; « chacun son tour » ou « touché : on
+  rejoue ».
+- Le serveur ne révèle jamais un navire adverse avant qu'il soit coulé (toute la flotte apparaît en
+  fin de partie). Moteur : `public/bataille/engine.js`, module serveur : `server/games/bataille.js`.
 
 ## Développer en local
 

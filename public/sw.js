@@ -2,11 +2,15 @@
 // du serveur). Réseau d'abord pour toujours avoir la dernière version, cache en secours.
 // L'API et le WebSocket ne passent jamais par le cache.
 
-const VERSION = 'arcade-v1';
+const VERSION = 'arcade-v2';
 
 const PRECACHE = [
   '/',
   '/arcade.json',
+  '/bataille/engine.js',
+  '/bataille/index.html',
+  '/bataille/main.js',
+  '/bataille/style.css',
   '/hub.css',
   '/hub.js',
   '/icons/apple-touch-icon.png',

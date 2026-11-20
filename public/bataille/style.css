@@ -1,0 +1,393 @@
+/* Bataille navale : même thème sombre épuré, eau bleu nuit, navires en aplats de couleur. */
+
+.naval {
+  min-height: 100dvh;
+  gap: 12px;
+  padding-top: calc(12px + var(--safe-top));
+  padding-bottom: calc(16px + var(--safe-bottom));
+  --water: rgb(91 140 255 / 0.12);
+  --water-line: rgb(91 140 255 / 0.22);
+  --hit: #f26b6b;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.topbar .title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.avatar {
+  position: relative;
+  font-size: 1.5rem;
+}
+.presence {
+  position: absolute;
+  right: -3px;
+  bottom: 1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #4a4e57;
+  box-shadow: 0 0 0 2px var(--bg);
+}
+.presence.on {
+  background: var(--ok);
+}
+.who {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+.who small {
+  color: var(--ink-dim);
+  font-size: 0.78rem;
+}
+
+.status {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: center;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.status.mine {
+  border-color: var(--ink);
+}
+.status small {
+  color: var(--ink-dim);
+  font-size: 0.78rem;
+}
+
+.board {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.actions {
+  display: flex;
+  gap: 8px;
+}
+.actions button {
+  flex: 1;
+}
+
+/* ------------------------------------------------------------ grille */
+
+.grid {
+  --w: min(calc(100vw - 32px), 440px);
+  display: grid;
+  width: var(--w);
+  aspect-ratio: 1;
+  grid-template-columns: repeat(var(--n), 1fr);
+  grid-template-rows: repeat(var(--n), 1fr);
+  gap: 2px;
+  position: relative;
+}
+.grid.labelled {
+  grid-template-columns: 0.55fr repeat(var(--n), 1fr);
+  grid-template-rows: 0.55fr repeat(var(--n), 1fr);
+}
+.phase-battle .grid.big,
+.phase-over .grid.big {
+  --w: min(calc(100vw - 32px), 440px, 50dvh);
+}
+.phase-placement .grid.big {
+  --w: min(calc(100vw - 32px), 440px, 62dvh);
+}
+.grid.small {
+  --w: min(46vw, 210px, 27dvh);
+  gap: 1px;
+}
+
+.lbl {
+  display: grid;
+  place-items: center;
+  font-size: 0.62rem;
+  color: var(--ink-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.cell {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: var(--water);
+  box-shadow: inset 0 0 0 1px var(--water-line);
+  transition: background 0.15s;
+}
+.cell:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.cell:active:not(:disabled) {
+  transform: none;
+  background: rgb(91 140 255 / 0.3);
+}
+.grid.small .cell {
+  border-radius: 2px;
+}
+.grid.armed .cell:not(:disabled) {
+  cursor: crosshair;
+}
+.cell.known {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.05);
+}
+.cell.aim {
+  background: rgb(236 238 242 / 0.22);
+  box-shadow:
+    inset 0 0 0 2px var(--ink),
+    0 0 0 3px rgb(236 238 242 / 0.15);
+  animation: pulse 1s ease-in-out infinite alternate;
+}
+@keyframes pulse {
+  to {
+    background: rgb(236 238 242 / 0.08);
+  }
+}
+
+/* navires : une bande arrondie qui couvre leurs cases (dessinée par ::before, les marges en %
+   des éléments de grille se calculant sur la largeur de la grille) */
+.ship {
+  pointer-events: none;
+  z-index: 1;
+  position: relative;
+}
+.ship::before {
+  content: '';
+  position: absolute;
+  border-radius: 999px;
+  background: var(--c);
+  box-shadow: inset 0 -3px 0 rgb(0 0 0 / 0.18);
+  transition: background 0.2s;
+}
+.ship.h::before {
+  inset: 18% 4px;
+}
+.ship.v::before {
+  inset: 4px 18%;
+}
+.grid.small .ship.h::before {
+  inset: 14% 1px;
+  box-shadow: none;
+}
+.grid.small .ship.v::before {
+  inset: 1px 14%;
+  box-shadow: none;
+}
+.ship.selected::before {
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 4px var(--ink);
+  animation: lift 0.18s ease-out;
+}
+@keyframes lift {
+  from {
+    transform: scale(0.92);
+  }
+}
+.ship.sunk::before {
+  background: color-mix(in srgb, var(--c) 55%, var(--bg));
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--hit) 55%, transparent);
+}
+.enemy .ship {
+  animation: surface 0.5s ease-out;
+}
+@keyframes surface {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+}
+
+/* tirs */
+.mark {
+  pointer-events: none;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+.mark::after {
+  content: '';
+  border-radius: 50%;
+}
+.mark.miss::after {
+  width: 26%;
+  aspect-ratio: 1;
+  background: var(--ink-dim);
+  opacity: 0.7;
+}
+.mark.hit::after {
+  width: 52%;
+  aspect-ratio: 1;
+  background: var(--hit);
+  box-shadow: 0 0 10px rgb(242 107 107 / 0.6);
+}
+.mark.recent {
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.mark.boom::after {
+  animation: pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+.mark.boom::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  animation: ripple 0.8s ease-out forwards;
+}
+.mark.hit.boom::before {
+  border-color: var(--hit);
+}
+@keyframes pop {
+  from {
+    transform: scale(0);
+  }
+}
+@keyframes ripple {
+  from {
+    transform: scale(0.3);
+    opacity: 1;
+  }
+  to {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+/* ------------------------------------------------------------ flottes */
+
+ul.fleet {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 12px;
+  font-size: 0.75rem;
+  color: var(--ink-dim);
+}
+ul.fleet li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pips {
+  display: flex;
+  gap: 2px;
+}
+.pips i {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--c);
+}
+ul.fleet li.down {
+  text-decoration: line-through;
+  opacity: 0.45;
+}
+ul.fleet li.down .pips i {
+  background: var(--hit);
+}
+
+.home-waters {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: center;
+}
+.home-side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.home-side .caption {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.home-side ul.fleet {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.fire {
+  margin-top: auto;
+}
+
+/* ------------------------------------------------------------ annonces */
+
+.flash {
+  position: fixed;
+  left: 50%;
+  top: 38%;
+  transform: translate(-50%, -50%);
+  z-index: 25;
+  pointer-events: none;
+  padding: 12px 22px;
+  border-radius: 16px;
+  font-weight: 800;
+  font-size: 1.15rem;
+  white-space: nowrap;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.5);
+  animation: flash 2s ease-out forwards;
+}
+.flash.hit {
+  border-color: var(--hit);
+}
+.flash.sunk {
+  background: var(--hit);
+  color: #fff;
+  border-color: transparent;
+  font-size: 1.3rem;
+}
+.flash.theirs {
+  top: calc(64px + var(--safe-top));
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+@keyframes flash {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -40%) scale(0.9);
+  }
+  12%,
+  75% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -60%);
+  }
+}
+
+.floating {
+  position: fixed;
+  left: 50%;
+  bottom: calc(18px + var(--safe-bottom));
+  transform: translateX(-50%);
+  z-index: 15;
+}
+.fatal {
+  text-align: center;
+  justify-content: center;
+  min-height: 100dvh;
+}

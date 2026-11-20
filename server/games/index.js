@@ -2,8 +2,9 @@
 // son interface dans public/<id>/.
 
 import skyjojo from './skyjojo.js';
+import bataille from './bataille.js';
 
-const MODULES = [skyjojo];
+const MODULES = [skyjojo, bataille];
 
 export async function loadGames() {
   const games = new Map();

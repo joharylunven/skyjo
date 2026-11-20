@@ -2,7 +2,6 @@
   "name": "Jojo Arcade",
   "tagline": "Nos jeux à deux, où qu’on soit.",
   "upcoming": [
-    { "name": "Bataille navale", "emoji": "🚢", "color": "#5b8cff" },
     { "name": "Minigolf", "emoji": "⛳", "color": "#6fd36f" }
   ]
 }
