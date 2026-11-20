@@ -330,7 +330,7 @@ function rulesSheet() {
         {},
         h('li', {}, 'On joue chacun son tour sur le même trou ; les balles ne se gênent pas.'),
         h('li', {}, 'Pour jouer : pose le doigt n’importe où, tire en arrière comme un lance-pierre (plus tu tires loin, plus c’est fort), relâche.'),
-        h('li', {}, 'Sable et boue freinent, les pentes (flèches) font rouler, les charrettes à zébus bougent pendant le coup, le tronc creux te fait ressortir plus loin.'),
+        h('li', {}, 'Sable et boue freinent fort, les pentes (flèches) font rouler, les charrettes à zébus bougent pendant le coup, le tronc creux te fait ressortir plus loin.'),
         h('li', {}, 'Dans l’eau : un coup de pénalité et la balle revient où elle était.'),
         h('li', {}, `Au bout de ${MAX_STROKES} coups sans finir, la balle est ramassée et compte ${MAX_STROKES + 1}.`),
         h('li', {}, 'Celui qui a fait le meilleur score commence le trou suivant. Le plus petit total gagne.'),

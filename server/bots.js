@@ -4,7 +4,7 @@
 import { Worker } from 'node:worker_threads';
 
 export const BOTS = [
-  { id: 'bot-rakoto', name: 'Rakoto', avatar: '🤖', game: 'minigolf', level: 'bon', blurb: 'Bon joueur, fait parfois des erreurs' },
+  { id: 'bot-rakoto', name: 'Rakoto', avatar: '🤖', game: 'minigolf', level: 'bon', blurb: 'Bon joueur, sûr au putt' },
   { id: 'bot-rakoto-champion', name: 'Rakoto Champion', avatar: '👑', game: 'minigolf', level: 'champion', blurb: 'Presque imbattable' },
 ];
 

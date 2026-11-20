@@ -19,7 +19,9 @@ export const SAMPLE_HZ = 30;
 
 const DT = 1 / 240;
 const FRICTION = 36;
-const SAND_FRICTION = 150;
+// sable et boue : freinage fort, et d'autant plus fort que la balle va vite (elle s'enfonce)
+const SAND_FRICTION = 260;
+const SAND_DRAG = 4.5;
 const RESTITUTION = 0.72;
 const CAPTURE_SPEED = 62;
 const MAX_TIME = 25;
@@ -125,7 +127,7 @@ export function simulate(hole, from, angle, power, tau0 = 0) {
     let bridge = false;
     for (const z of c.zones) {
       if (!inPoly(z.poly, b.x, b.y)) continue;
-      if (z.type === 'sand') fr = SAND_FRICTION;
+      if (z.type === 'sand') fr = SAND_FRICTION + SAND_DRAG * Math.hypot(b.vx, b.vy);
       else if (z.type === 'slope') {
         ax += z.ax;
         ay += z.ay;

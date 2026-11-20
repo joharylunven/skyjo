@@ -7,9 +7,10 @@ import { simulate, inPoly, tauFor, W, H } from '../public/minigolf/engine.js';
 import { holeById } from '../public/minigolf/courses.js';
 
 export const LEVELS = {
-  // écart-type d'exécution : angle (radians) et puissance (relative)
-  bon: { angle: 0.05, power: 0.08 },
-  champion: { angle: 0.028, power: 0.045 },
+  // écart-type d'exécution : angle (radians), puissance relative et puissance absolue (un humain
+  // dose mal les tout petits coups aussi)
+  bon: { angle: 0.07, power: 0.11, abs: 0.006 },
+  champion: { angle: 0.028, power: 0.045, abs: 0.003 },
 };
 
 const fields = new Map();
@@ -64,8 +65,10 @@ function score(r, field, startValue) {
   return 1 + remaining(field(r.end.x, r.end.y));
 }
 
+/** Tirage gaussien borné à ±2,2 écarts-types (pas de coup complètement raté). */
 function gaussian(rand) {
-  return Math.sqrt(-2 * Math.log(1 - rand())) * Math.cos(2 * Math.PI * rand());
+  const g = Math.sqrt(-2 * Math.log(1 - rand())) * Math.cos(2 * Math.PI * rand());
+  return Math.max(-2.2, Math.min(2.2, g));
 }
 
 /**
@@ -79,53 +82,69 @@ export function chooseShot({ holeId, from, shots, level = 'bon', rand = Math.ran
   const tau0 = tauFor(shots);
   const startValue = remaining(field(from.x, from.y));
 
-  // 1. balayage large : 240 directions × 14 puissances
+  const evalShot = (angle, power) => score(simulate(hole, from, angle, power, tau0), field, startValue);
+  const jitter = (c, ka, kp) => evalShot(c.angle + ka * noise.angle, Math.min(1, Math.max(0.02, c.power * (1 + kp * noise.power) + kp * noise.abs)));
+  const byValue = (x, y) => x.value - y.value;
+
+  // 1. balayage large : 240 directions × 16 puissances, plus le tir droit vers le trou
   const candidates = [];
-  const powers = [0.08, 0.12, 0.16, 0.2, 0.25, 0.3, 0.36, 0.43, 0.5, 0.58, 0.67, 0.77, 0.88, 1];
-  for (let i = 0; i < 240; i++) {
-    const angle = (i / 240) * Math.PI * 2;
-    for (const power of powers) candidates.push({ angle, power, value: score(simulate(hole, from, angle, power, tau0), field, startValue) });
-  }
-  candidates.sort((a, b) => a.value - b.value);
+  const powers = [0.05, 0.08, 0.11, 0.14, 0.17, 0.2, 0.25, 0.3, 0.36, 0.43, 0.5, 0.58, 0.67, 0.77, 0.88, 1];
+  const direct = Math.atan2(hole.hole[1] - from.y, hole.hole[0] - from.x);
+  const angles = Array.from({ length: 240 }, (_, i) => (i / 240) * Math.PI * 2);
+  angles.push(direct, direct - 0.01, direct + 0.01);
+  for (const angle of angles) for (const power of powers) candidates.push({ angle, power, value: evalShot(angle, power) });
+  candidates.sort(byValue);
 
-  // 2. affinage autour des meilleurs coups
-  const refined = [];
-  for (const c of candidates.slice(0, 18)) {
-    for (const da of [-0.012, -0.006, 0, 0.006, 0.012])
-      for (const dp of [-0.03, 0, 0.03]) {
-        const angle = c.angle + da;
-        const power = Math.min(1, Math.max(0.05, c.power + dp));
-        refined.push({ angle, power, value: score(simulate(hole, from, angle, power, tau0), field, startValue) });
-      }
-  }
-  refined.sort((a, b) => a.value - b.value);
+  // 2. tous les coups presque aussi bons que le meilleur, toutes forces confondues (au plus 160,
+  //    pris à intervalles réguliers) : premier test de robustesse rapide
+  const near = candidates.filter((c) => c.value <= candidates[0].value + 0.35);
+  const step = Math.max(1, near.length / 160);
+  const pool = [];
+  for (let i = 0; i < near.length && pool.length < 160; i += step) pool.push(near[Math.floor(i)]);
+  const quick = [
+    [0, 0],
+    [1.5, 0],
+    [-1.5, 0],
+    [0, 1.5],
+    [0, -1.5],
+  ];
+  for (const c of pool) c.robust = quick.reduce((t, [ka, kp]) => t + jitter(c, ka, kp), 0) / quick.length;
+  pool.sort((x, y) => x.robust - y.robust);
 
-  // 3. robustesse : on garde le coup qui marche encore joué un peu de travers
+  // 3. affinage des 12 meilleurs, puis test de robustesse complet
   const offsets = [
     [0, 0],
     [1, 0],
     [-1, 0],
     [0, 1],
     [0, -1],
-    [1.4, 0.7],
-    [-1.4, -0.7],
-    [0.7, -1.4],
-    [-0.7, 1.4],
+    [2, 0],
+    [-2, 0],
+    [0, 2],
+    [0, -2],
+    [1.2, 1.2],
+    [-1.2, -1.2],
+    [1.2, -1.2],
+    [-1.2, 1.2],
   ];
   let best = null;
-  for (const c of refined.slice(0, 30)) {
-    let total = 0;
-    for (const [ka, kp] of offsets) {
-      const angle = c.angle + ka * noise.angle;
-      const power = Math.min(1, Math.max(0.05, c.power * (1 + kp * noise.power)));
-      total += score(simulate(hole, from, angle, power, tau0), field, startValue);
+  for (const c0 of pool.slice(0, 12)) {
+    for (const [da, dp] of [
+      [0, 0],
+      [-0.01, 0],
+      [0.01, 0],
+      [0, -0.03],
+      [0, 0.03],
+    ]) {
+      const c = { angle: c0.angle + da, power: Math.min(1, Math.max(0.04, c0.power + dp)) };
+      const value = offsets.reduce((t, [ka, kp]) => t + jitter(c, ka, kp), 0) / offsets.length + c.power * 0.01;
+      if (!best || value < best.value) best = { ...c, value };
     }
-    const value = total / offsets.length;
-    if (!best || value < best.value) best = { ...c, value };
   }
 
   // 4. on joue, avec la main qui tremble un peu
   const angle = best.angle + gaussian(rand) * noise.angle;
-  const power = Math.min(1, Math.max(0.05, best.power * (1 + gaussian(rand) * noise.power)));
+  const g = gaussian(rand);
+  const power = Math.min(1, Math.max(0.02, best.power * (1 + g * noise.power) + g * noise.abs));
   return { type: 'shot', angle: Math.round(angle * 1e4) / 1e4, power: Math.round(power * 1e3) / 1e3, expected: Math.round(best.value * 100) / 100 };
 }

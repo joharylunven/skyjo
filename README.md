@@ -76,9 +76,9 @@ papillons comètes) et le drapeau malgache sur chaque trou :
   balle ramassée au bout de 6 coups (compte 7). Le meilleur du trou commence le suivant ; le plus
   petit total gagne.
 - **Parcours** : grand tour (8 trous), balade (4 au hasard) ou express (2 au hasard).
-- **Contre un robot** : dans « Adversaire », choisir **Rakoto 🤖** (bon joueur, environ 19 coups sur
-  le grand tour pour un par de 24, avec de vraies erreurs) ou **Rakoto Champion 👑** (environ 14,
-  presque imbattable). Le robot essaie des milliers de coups avec le même simulateur que l'arbitre,
+- **Contre un robot** : dans « Adversaire », choisir **Rakoto 🤖** (bon joueur, environ 16 coups sur
+  le grand tour pour un par de 24) ou **Rakoto Champion 👑** (environ 11, presque imbattable).
+  De près, il ne rate quasiment plus : il choisit le putt franc qui rentre même joué un peu de travers. Le robot essaie des milliers de coups avec le même simulateur que l'arbitre,
   préfère ceux qui marchent encore s'il les joue un peu de travers, puis tire avec une main qui
   tremble un peu (`server/golf-ai.js`, calcul dans un thread à part). Ses parties comptent dans les
   scores, face à face avec « Rakoto ».
