@@ -15,7 +15,7 @@ export class Matches {
     this.store = store;
     this.auth = auth;
     this.games = games;
-    this.listeners = new Set(); // (match, events) => void
+    this.listeners = new Set(); // (match, events, { actor, awaitingBefore }) => void
   }
 
   get all() {
@@ -27,11 +27,16 @@ export class Matches {
     return () => this.listeners.delete(cb);
   }
 
-  _changed(match, events = []) {
+  _changed(match, events = [], meta = {}) {
     match.updatedAt = Date.now();
     match.rev = (match.rev ?? 0) + 1;
     this.store.save();
-    for (const cb of this.listeners) cb(match, events);
+    for (const cb of this.listeners) cb(match, events, meta);
+  }
+
+  /** Joueurs attendus en ce moment (vide si la partie n'est plus en cours). */
+  awaiting(match) {
+    return match.status === 'active' ? this.games.get(match.game).status(match.state).awaiting : [];
   }
 
   get(id) {
@@ -66,7 +71,7 @@ export class Matches {
       rev: 0,
     };
     this.all.push(match);
-    this._changed(match, [{ type: 'deal', round: 1 }]);
+    this._changed(match, [{ type: 'deal', round: 1 }], { actor: creatorId, awaitingBefore: [], created: true });
     return match;
   }
 
@@ -74,6 +79,7 @@ export class Matches {
     const match = this._require(id, profileId);
     if (match.status !== 'active') throw new MatchError(409, 'over', 'Cette partie est terminée.');
     const game = this.games.get(match.game);
+    const awaitingBefore = this.awaiting(match);
     const res = game.act(match.state, action, profileId);
     if (res.error) throw new MatchError(400, res.error.code, res.error.message);
     match.state = res.state;
@@ -83,17 +89,18 @@ export class Matches {
       match.result = st.result;
       match.finishedAt = Date.now();
     }
-    this._changed(match, res.events);
+    this._changed(match, res.events, { actor: profileId, awaitingBefore });
     return match;
   }
 
   abandon(id, profileId) {
     const match = this._require(id, profileId);
     if (match.status !== 'active') return match;
+    const awaitingBefore = this.awaiting(match);
     match.status = 'abandoned';
     match.abandonedBy = profileId;
     match.finishedAt = Date.now();
-    this._changed(match, [{ type: 'abandon', player: profileId }]);
+    this._changed(match, [{ type: 'abandon', player: profileId }], { actor: profileId, awaitingBefore });
     return match;
   }
 

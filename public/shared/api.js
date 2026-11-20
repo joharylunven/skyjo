@@ -56,7 +56,11 @@ export class Live {
     this.retry = 0;
     this.closed = false;
     this._connect();
-    document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && this.wake());
+    document.addEventListener('visibilitychange', () => {
+      // le serveur ne notifie pas un joueur qui a l'appli sous les yeux
+      this.send({ t: 'visible', visible: document.visibilityState === 'visible' });
+      if (document.visibilityState === 'visible') this.wake();
+    });
     window.addEventListener('online', () => this.wake());
   }
 
@@ -100,6 +104,7 @@ export class Live {
         this.retry = 0;
         this.me = msg.me;
         this._setStatus('open');
+        this.send({ t: 'visible', visible: document.visibilityState === 'visible' });
         if (this.watching) this.send({ t: 'watch', match: this.watching });
       }
       if (msg.t === 'error' && msg.code === 'auth') {
@@ -150,6 +155,43 @@ export function registerServiceWorker() {
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch((e) => console.warn('Service worker non enregistré', e));
   }
+}
+
+/** Notifications push : disponibles ? (sur iPhone, seulement dans l'appli ajoutée à l'écran d'accueil) */
+export const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+
+function keyBytes(base64url) {
+  const b64 = (base64url + '='.repeat((4 - (base64url.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/');
+  return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+}
+
+async function swReady() {
+  return Promise.race([navigator.serviceWorker.ready, new Promise((_, ko) => setTimeout(() => ko(new Error('Service worker indisponible.')), 8000))]);
+}
+
+/** Abonnement de cet appareil, s'il existe et que la permission est accordée. */
+export async function currentPush() {
+  if (!pushSupported() || Notification.permission !== 'granted') return null;
+  const reg = await swReady();
+  return reg.pushManager.getSubscription();
+}
+
+/** Demande la permission (à appeler directement depuis un geste) puis abonne l'appareil. */
+export async function enablePush() {
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') throw new ApiError(0, perm === 'denied' ? 'Notifications refusées : réactive-les dans Réglages › Notifications.' : 'Notifications non autorisées.');
+  const reg = await swReady();
+  const { publicKey } = await api('/api/push');
+  const sub = (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(publicKey) }));
+  await api('/api/push/subscribe', { method: 'POST', body: { subscription: sub.toJSON() } });
+  return sub;
+}
+
+export async function disablePush() {
+  const sub = await currentPush().catch(() => null);
+  if (!sub) return;
+  await api('/api/push/unsubscribe', { method: 'POST', body: { endpoint: sub.endpoint } }).catch(() => {});
+  await sub.unsubscribe().catch(() => {});
 }
 
 export const isStandalone = () => window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true;

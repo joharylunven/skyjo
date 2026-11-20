@@ -1,6 +1,6 @@
 // Serveur de la salle de jeux : fichiers statiques, API JSON et WebSocket temps réel.
 // Variables d'environnement : PORT (8080), DATA_DIR (./data), INVITE_CODE (obligatoire pour créer
-// un profil), HUB_NAME.
+// un profil), HUB_NAME, PUBLIC_URL (adresse publique, sert de contact pour les notifications push).
 
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
@@ -11,6 +11,7 @@ import { Store } from './store.js';
 import { Auth, AuthError, AVATARS } from './auth.js';
 import { Matches, MatchError } from './matches.js';
 import { loadGames, describeGame } from './games/index.js';
+import { Push } from './push.js';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -31,12 +32,13 @@ const SECURITY_HEADERS = {
     "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'",
 };
 
-export async function startServer({ port = 8080, dataDir, inviteCode, hubName = 'Jojo Arcade', publicDir } = {}) {
+export async function startServer({ port = 8080, dataDir, inviteCode, hubName = 'Jojo Arcade', publicDir, pushSubject, pushSend } = {}) {
   publicDir = resolve(publicDir ?? fileURLToPath(new URL('../public/', import.meta.url)));
   const store = new Store(dataDir ?? fileURLToPath(new URL('../data/', import.meta.url)));
   const auth = new Auth(store, { inviteCode });
   const games = await loadGames();
   const matches = new Matches(store, auth, games);
+  const push = new Push(store, { subject: pushSubject, send: pushSend });
 
   // ------------------------------------------------------------------ HTTP
 
@@ -103,6 +105,19 @@ export async function startServer({ port = 8080, dataDir, inviteCode, hubName = 
       return json(res, 200, matches.summary(m, me.id));
     }
     if (path === '/api/stats' && method === 'GET') return json(res, 200, matches.stats(needMe().id));
+    if (path === '/api/push' && method === 'GET') return json(res, 200, { publicKey: push.publicKey, devices: push.subs.filter((s) => s.profileId === needMe().id).length });
+    if (path === '/api/push/subscribe' && method === 'POST') {
+      const ok = push.subscribe(needMe().id, (await readBody(req)).subscription);
+      return json(res, ok ? 200 : 400, ok ? { ok } : { error: 'Abonnement invalide.' });
+    }
+    if (path === '/api/push/unsubscribe' && method === 'POST') {
+      push.unsubscribe(String((await readBody(req)).endpoint ?? ''), needMe().id);
+      return json(res, 200, { ok: true });
+    }
+    if (path === '/api/push/test' && method === 'POST') {
+      await push.notify(needMe().id, { title: '🔔 Notifications activées', body: 'Tu seras prévenu·e quand ce sera ton tour de jouer.', url: '/', tag: 'test' });
+      return json(res, 200, { ok: true });
+    }
     return json(res, 404, { error: 'Route inconnue.' });
   }
 
@@ -165,13 +180,39 @@ export async function startServer({ port = 8080, dataDir, inviteCode, hubName = 
     for (const c of clients) if (c.watching === matchId) sendWs(c, { t: 'presence', match: matchId, online });
   }
 
-  matches.onChange((match, events) => {
+  matches.onChange((match, events, meta) => {
+    notifyPlayers(match, meta);
     for (const c of clients) {
       if (!c.me || !match.players.includes(c.me.id)) continue;
       if (c.watching === match.id) pushMatch(c, match, events);
       else sendWs(c, { t: 'matches' });
     }
   });
+
+  // ------------------------------------------------------------------ notifications
+
+  /** Un joueur a-t-il l'appli ouverte et visible (accueil ou partie) ? Alors pas de notification. */
+  const isLooking = (profileId) => [...clients].some((c) => c.me?.id === profileId && !c.hidden && c.readyState === c.OPEN);
+
+  function notifyPlayers(match, { actor, awaitingBefore = [], created = false } = {}) {
+    const game = games.get(match.game);
+    const awaiting = matches.awaiting(match);
+    const actorName = auth.getProfile(actor)?.name ?? 'Ton adversaire';
+    const label = match.status === 'active' ? game.status(match.state).label : '';
+    for (const pid of match.players) {
+      if (pid === actor || !push.hasDevice(pid) || isLooking(pid)) continue;
+      let body = null;
+      if (created) body = `${actorName} te lance une partie. À toi de jouer !`;
+      else if (match.status === 'finished') {
+        const w = match.result?.winners ?? [];
+        body = w.length !== 1 ? `Égalité avec ${actorName} !` : w[0] === pid ? `Tu as gagné contre ${actorName} ! 🎉` : `${actorName} a gagné cette fois… Revanche ?`;
+      } else if (match.status === 'abandoned') body = `${actorName} a abandonné la partie.`;
+      else if (awaiting.includes(pid) && !awaitingBefore.includes(pid)) body = `${actorName} a joué : à toi ! · ${label}`;
+      if (!body) continue;
+      const badge = matches.listFor(pid).filter((m) => m.status === 'active' && m.yourTurn).length;
+      push.notify(pid, { title: `${game.emoji} ${game.name}`, body, url: `${game.path}?match=${match.id}`, tag: match.id, badge }).catch((e) => console.warn(e));
+    }
+  }
 
   wss.on('connection', (ws) => {
     ws.alive = true;
@@ -191,6 +232,10 @@ export async function startServer({ port = 8080, dataDir, inviteCode, hubName = 
           return sendWs(ws, { t: 'welcome', me: ws.me });
         }
         if (!ws.me) return sendWs(ws, { t: 'error', code: 'auth', message: 'Connectez-vous.' });
+        if (msg.t === 'visible') {
+          ws.hidden = !msg.visible; // appli en arrière-plan : les notifications reprennent
+          return;
+        }
         if (msg.t === 'watch') {
           const match = matches.get(String(msg.match));
           if (!match) throw new MatchError(404, 'not_found', 'Partie introuvable.');
@@ -236,7 +281,7 @@ export async function startServer({ port = 8080, dataDir, inviteCode, hubName = 
     await new Promise((ok) => server.close(ok));
     store.flush();
   };
-  return { server, store, auth, matches, port: server.address().port, close };
+  return { server, store, auth, matches, push, port: server.address().port, close };
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
@@ -247,6 +292,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     dataDir: process.env.DATA_DIR,
     inviteCode,
     hubName: process.env.HUB_NAME,
+    pushSubject: process.env.PUSH_SUBJECT || process.env.PUBLIC_URL,
   });
   console.log(`Salle de jeux sur http://localhost:${app.port}`);
   const stop = async () => {

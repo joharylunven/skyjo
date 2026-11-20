@@ -2,7 +2,7 @@
 // du serveur). Réseau d'abord pour toujours avoir la dernière version, cache en secours.
 // L'API et le WebSocket ne passent jamais par le cache.
 
-const VERSION = 'arcade-v4';
+const VERSION = 'arcade-v5';
 
 const PRECACHE = [
   '/',
@@ -80,6 +80,50 @@ async function networkFirst(request) {
     throw e;
   }
 }
+
+// ---------------------------------------------------------------- notifications « à toi de jouer »
+
+self.addEventListener('push', (event) => {
+  let d = {};
+  try {
+    d = event.data?.json() ?? {};
+  } catch {
+    d = { body: event.data?.text() };
+  }
+  event.waitUntil(
+    (async () => {
+      if (typeof d.badge === 'number' && 'setAppBadge' in self.navigator) {
+        await (d.badge ? self.navigator.setAppBadge(d.badge) : self.navigator.clearAppBadge()).catch(() => {});
+      }
+      await self.registration.showNotification(d.title ?? 'Jojo Arcade', {
+        body: d.body ?? 'À toi de jouer !',
+        icon: '/icons/icon-192.png',
+        badge: '/icons/icon-192.png',
+        tag: d.tag,
+        renotify: !!d.tag,
+        data: { url: d.url ?? '/' },
+      });
+    })(),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = new URL(event.notification.data?.url ?? '/', self.location.origin).href;
+  event.waitUntil(
+    (async () => {
+      const open = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      for (const c of open) {
+        try {
+          await c.focus();
+          if (c.url !== url && 'navigate' in c) await c.navigate(url);
+          return;
+        } catch {}
+      }
+      await self.clients.openWindow(url);
+    })(),
+  );
+});
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;

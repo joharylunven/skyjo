@@ -203,3 +203,74 @@ test('les données survivent à un redémarrage', async () => {
   assert.equal(again.matches.listFor(alice.id).length, 2);
   await again.close();
 });
+
+test('notifications : envoyées au joueur dont c’est le tour, pas à celui qui a l’appli ouverte', async () => {
+  const dir2 = mkdtempSync(join(tmpdir(), 'arcade-push-'));
+  const sent = [];
+  const srv = await startServer({ port: 0, dataDir: dir2, inviteCode: INVITE, pushSend: async (sub, payload) => sent.push({ endpoint: sub.endpoint, ...JSON.parse(payload) }) });
+  const url = `http://localhost:${srv.port}`;
+  const post = async (path, body, token) =>
+    (await fetch(url + path, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) })).json();
+  const mk = async (name) => post('/api/profiles', { name, pin: '1234', invite: INVITE });
+  const a = await mk('Ana');
+  const b = await mk('Ben');
+  const sub = (n) => ({ endpoint: `https://push.example/${n}`, keys: { p256dh: 'p', auth: 'a' } });
+  assert.equal((await post('/api/push/subscribe', { subscription: { endpoint: 'http://x' } }, a.token)).error, 'Abonnement invalide.');
+  await post('/api/push/subscribe', { subscription: sub('ana') }, a.token);
+  await post('/api/push/subscribe', { subscription: sub('ben') }, b.token);
+  const key = await (await fetch(url + '/api/push', { headers: { Authorization: `Bearer ${b.token}` } })).json();
+  assert.ok(key.publicKey.length > 40);
+  assert.equal(key.devices, 1);
+
+  // Ana lance une partie : Ben est prévenu, pas Ana
+  const m = await post('/api/matches', { game: 'bataille', opponent: b.profile.id }, a.token);
+  await new Promise((r) => setTimeout(r, 20));
+  assert.deepEqual(sent.map((x) => x.endpoint), ['https://push.example/ben']);
+  assert.match(sent[0].body, /Ana te lance une partie/);
+  assert.equal(sent[0].url, `/bataille/?match=${m.id}`);
+  assert.equal(sent[0].badge, 1);
+
+  // les deux dressent leur plateau ; Ben a l'appli ouverte (visible) : pas de notification pour lui
+  const fleet = [
+    { id: 'porte-avions', x: 0, y: 0, dir: 'h' },
+    { id: 'croiseur', x: 0, y: 2, dir: 'h' },
+    { id: 'contre-torpilleur', x: 0, y: 4, dir: 'h' },
+    { id: 'sous-marin', x: 0, y: 6, dir: 'h' },
+    { id: 'torpilleur', x: 0, y: 8, dir: 'h' },
+  ];
+  const wsA = await new Promise((ok) => {
+    const ws = new WebSocket(`ws://localhost:${srv.port}/ws`);
+    ws.on('open', () => ws.send(JSON.stringify({ t: 'hello', token: a.token })));
+    ws.on('message', (raw) => JSON.parse(raw).t === 'welcome' && ok(ws));
+  });
+  sent.length = 0;
+  srv.matches.act(m.id, b.profile.id, { type: 'place', ships: fleet });
+  srv.matches.act(m.id, a.profile.id, { type: 'place', ships: fleet });
+  await new Promise((r) => setTimeout(r, 20));
+  const st = srv.matches.get(m.id).state;
+  const first = st.players[st.turn].id;
+  // le premier à tirer est prévenu, sauf si c'est Ana qui a l'appli ouverte
+  assert.deepEqual(sent.map((x) => x.endpoint), first === b.profile.id ? ['https://push.example/ben'] : []);
+
+  // Ana passe l'appli en arrière-plan : elle redevient notifiable
+  wsA.send(JSON.stringify({ t: 'visible', visible: false }));
+  await new Promise((r) => setTimeout(r, 20));
+  sent.length = 0;
+  const shooter = first;
+  const other = shooter === a.profile.id ? b.profile.id : a.profile.id;
+  srv.matches.act(m.id, shooter, { type: 'fire', x: 9, y: 9 });
+  await new Promise((r) => setTimeout(r, 20));
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].endpoint, other === a.profile.id ? 'https://push.example/ana' : 'https://push.example/ben');
+  assert.match(sent[0].body, /a joué : à toi/);
+
+  // un abonnement expiré (410) est oublié
+  srv.push.send = async () => {
+    throw Object.assign(new Error('gone'), { statusCode: 410 });
+  };
+  await srv.push.notify(b.profile.id, { title: 't', body: 'b' });
+  assert.equal(srv.push.hasDevice(b.profile.id), false);
+  wsA.close();
+  await srv.close();
+  rmSync(dir2, { recursive: true, force: true });
+});

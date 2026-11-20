@@ -1,6 +1,6 @@
 // Accueil de la salle de jeux : profils, parties en cours, choix du jeu, scores et historique.
 
-import { api, session, Live, ApiError, registerServiceWorker, isIos, isStandalone } from './shared/api.js';
+import { api, session, Live, ApiError, registerServiceWorker, isIos, isStandalone, pushSupported, currentPush, enablePush, disablePush } from './shared/api.js';
 import { h, clear, toast } from './shared/dom.js';
 
 const root = document.getElementById('app');
@@ -13,6 +13,7 @@ const state = {
   stats: { rivals: [], history: [] },
   sheet: null, // { type: 'pin', profile } | { type: 'create' } | { type: 'new', game } | { type: 'account' }
   busy: false,
+  push: 'unknown', // 'on' | 'off' | 'denied' | 'install' (iPhone : appli à installer d'abord) | 'unsupported'
 };
 
 let live = null;
@@ -51,7 +52,22 @@ function startLive() {
   });
 }
 
+/** État des notifications sur cet appareil ; un abonnement existant est rattaché au profil connecté. */
+async function checkPush() {
+  if (!pushSupported()) state.push = isIos() && !isStandalone() ? 'install' : 'unsupported';
+  else if (Notification.permission === 'denied') state.push = 'denied';
+  else {
+    const sub = await currentPush().catch(() => null);
+    state.push = sub ? 'on' : 'off';
+    if (sub && state.me) await api('/api/push/subscribe', { method: 'POST', body: { subscription: sub.toJSON() } }).catch(() => {});
+  }
+  render();
+}
+
 async function logout(callServer = true) {
+  // l'appareil ne reçoit plus les notifications de ce profil
+  const sub = await currentPush().catch(() => null);
+  if (sub && callServer) await api('/api/push/unsubscribe', { method: 'POST', body: { endpoint: sub.endpoint } }).catch(() => {});
   if (callServer) await api('/api/logout', { method: 'POST' }).catch(() => {});
   session.token = null;
   live?.close();
@@ -68,6 +84,7 @@ async function signedIn({ token, profile }) {
   state.sheet = null;
   startLive();
   await refresh();
+  checkPush();
 }
 
 // ---------------------------------------------------------------------------- actions
@@ -135,6 +152,29 @@ function installHint() {
   );
 }
 
+function pushCard() {
+  if (state.push === 'off')
+    return h(
+      'div.push-card',
+      {},
+      h('span.push-bell', {}, '🔔'),
+      h('span.push-text', {}, h('strong', {}, 'Être prévenu·e quand c’est ton tour'), h('small', {}, 'Une notification quand l’autre a joué, même appli fermée.')),
+      h('button.small.primary', { disabled: state.busy, onClick: turnPushOn }, 'Activer'),
+    );
+  if (state.push === 'install' && state.me)
+    return h('p.small.push-note', {}, '🔔 Pour recevoir les notifications « à toi de jouer », ajoute d’abord l’appli à l’écran d’accueil et ouvre-la depuis l’icône.');
+  return null;
+}
+
+function turnPushOn() {
+  submit(async () => {
+    await enablePush();
+    state.push = 'on';
+    await api('/api/push/test', { method: 'POST' }).catch(() => {});
+    toast('Notifications activées 🔔');
+  });
+}
+
 function matchRow(m) {
   const tag = m.status !== 'active' ? null : m.yourTurn ? h('span.tag.go', {}, 'À toi !') : h('span.tag', {}, `À ${m.opponent?.name ?? '…'}`);
   return h(
@@ -161,6 +201,7 @@ function homeScreen() {
       h('button.me', { 'aria-label': 'Mon compte', onClick: () => openSheet({ type: 'account' }) }, avatar(state.me)),
     ),
     installHint(),
+    pushCard(),
     h(
       'section',
       {},
@@ -396,9 +437,40 @@ function newMatchSheet(sheet) {
   ]);
 }
 
+function pushSettings() {
+  const s = state.push;
+  if (s === 'on')
+    return [
+      h('p.small', {}, '🔔 Notifications activées sur cet appareil : tu es prévenu·e quand c’est ton tour (sauf si l’appli est déjà ouverte).'),
+      h(
+        'div.row',
+        {},
+        h('button', { style: { flex: 1 }, disabled: state.busy, onClick: () => submit(() => api('/api/push/test', { method: 'POST' })) }, 'Tester'),
+        h(
+          'button',
+          {
+            style: { flex: 1 },
+            disabled: state.busy,
+            onClick: () =>
+              submit(async () => {
+                await disablePush();
+                state.push = 'off';
+              }),
+          },
+          'Désactiver',
+        ),
+      ),
+    ];
+  if (s === 'off') return [h('button', { disabled: state.busy, onClick: turnPushOn }, '🔔 Activer les notifications')];
+  if (s === 'denied') return [h('p.small', {}, '🔕 Notifications bloquées pour cette appli : Réglages › Notifications › Jojo Arcade.')];
+  if (s === 'install') return [h('p.small', {}, '🔔 Les notifications marchent depuis l’appli ajoutée à l’écran d’accueil.')];
+  return [];
+}
+
 function accountSheet() {
   return sheetEl(`${state.me.avatar} ${state.me.name}`, [
     h('p.small', {}, 'Ton profil reste connecté sur cet appareil.'),
+    ...pushSettings(),
     h('button.danger', { onClick: () => logout() }, 'Se déconnecter'),
   ]);
 }
@@ -437,6 +509,7 @@ async function boot() {
   if (state.me) {
     startLive();
     await refresh();
+    checkPush();
   } else {
     if (session.token) session.token = null;
     render();

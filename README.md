@@ -53,6 +53,18 @@ dévore tout le plateau d'en face gagne.
   apparaît en fin de partie). Moteur : `public/bataille/engine.js`, module serveur :
   `server/games/bataille.js` (l'identifiant interne reste `bataille`).
 
+## Notifications « à toi de jouer »
+
+Sur iPhone (iOS 16.4 ou plus), dans l'appli **ouverte depuis l'écran d'accueil** : carte « Être
+prévenu·e quand c'est ton tour » → **Activer**, puis autoriser. Une notification de test arrive tout
+de suite. Ensuite, on reçoit une notification quand l'autre a joué et que c'est notre tour, quand il
+lance une partie, l'abandonne, ou quand la partie se termine — sauf si l'appli est déjà ouverte à
+l'écran. Toucher la notification ouvre directement la partie ; la pastille de l'icône compte les
+parties où c'est notre tour. Réglages (tester, désactiver) : avatar en haut à droite.
+
+Côté serveur : Web Push standard (`server/push.js`, paquet `web-push`), clés VAPID créées au premier
+démarrage et gardées dans `data/db.json`. `PUBLIC_URL` sert d'adresse de contact pour Apple/Google.
+
 ## Développer en local
 
 ```bash

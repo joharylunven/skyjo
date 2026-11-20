@@ -359,3 +359,33 @@ input.pin {
 .check small {
   color: var(--ink-dim);
 }
+
+/* --- notifications */
+
+.push-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.push-bell {
+  font-size: 1.4rem;
+}
+.push-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.push-text small {
+  color: var(--ink-dim);
+}
+.push-card button {
+  flex: none;
+}
+.push-note {
+  margin: 0;
+}
