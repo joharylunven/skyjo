@@ -2,7 +2,7 @@
 // du serveur). Réseau d'abord pour toujours avoir la dernière version, cache en secours.
 // L'API et le WebSocket ne passent jamais par le cache.
 
-const VERSION = 'arcade-v6';
+const VERSION = 'arcade-v7';
 
 const PRECACHE = [
   '/',

@@ -32,11 +32,11 @@ export class Auth {
   }
 
   publicProfile(p) {
-    return p && { id: p.id, name: p.name, avatar: p.avatar };
+    return p && { id: p.id, name: p.name, avatar: p.avatar, ...(p.bot ? { bot: true } : {}) };
   }
 
   listProfiles() {
-    return this.profiles.map((p) => this.publicProfile(p));
+    return this.profiles.filter((p) => !p.bot).map((p) => this.publicProfile(p));
   }
 
   getProfile(id) {
@@ -70,7 +70,7 @@ export class Auth {
   login({ profileId, pin }, ip) {
     this._checkRate(ip);
     const p = this.getProfile(profileId);
-    if (!p || !safeEqual(hashPin(String(pin ?? ''), p.salt), p.pinHash)) {
+    if (!p || p.bot || !safeEqual(hashPin(String(pin ?? ''), p.salt), p.pinHash)) {
       this._fail(ip);
       throw new AuthError(401, 'Code PIN incorrect.');
     }

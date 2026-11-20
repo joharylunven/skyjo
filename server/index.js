@@ -12,6 +12,7 @@ import { Auth, AuthError, AVATARS } from './auth.js';
 import { Matches, MatchError } from './matches.js';
 import { loadGames, describeGame } from './games/index.js';
 import { Push } from './push.js';
+import { BOTS, botInfo, ensureBotProfiles, BotRunner } from './bots.js';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -32,13 +33,15 @@ const SECURITY_HEADERS = {
     "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'",
 };
 
-export async function startServer({ port = 8080, dataDir, inviteCode, hubName = 'Jojo Arcade', publicDir, pushSubject, pushSend } = {}) {
+export async function startServer({ port = 8080, dataDir, inviteCode, hubName = 'Jojo Arcade', publicDir, pushSubject, pushSend, botDelay = 1500 } = {}) {
   publicDir = resolve(publicDir ?? fileURLToPath(new URL('../public/', import.meta.url)));
   const store = new Store(dataDir ?? fileURLToPath(new URL('../data/', import.meta.url)));
   const auth = new Auth(store, { inviteCode });
   const games = await loadGames();
   const matches = new Matches(store, auth, games);
   const push = new Push(store, { subject: pushSubject, send: pushSend });
+  ensureBotProfiles(store);
+  const bots = new BotRunner(matches, { delay: botDelay });
 
   // ------------------------------------------------------------------ HTTP
 
@@ -82,7 +85,7 @@ export async function startServer({ port = 8080, dataDir, inviteCode, hubName = 
     };
 
     if (path === '/api/hub' && method === 'GET') {
-      return json(res, 200, { name: hubName, avatars: AVATARS, profiles: auth.listProfiles(), games: [...games.values()].map(describeGame), me });
+      return json(res, 200, { name: hubName, avatars: AVATARS, profiles: auth.listProfiles(), games: [...games.values()].map((g) => ({ ...describeGame(g), bots: BOTS.filter((b) => b.game === g.id).map(botInfo) })), me });
     }
     if (path === '/api/profiles' && method === 'POST') return json(res, 201, auth.createProfile(await readBody(req), clientIp(req)));
     if (path === '/api/login' && method === 'POST') return json(res, 200, auth.login(await readBody(req), clientIp(req)));
@@ -185,6 +188,7 @@ export async function startServer({ port = 8080, dataDir, inviteCode, hubName = 
 
   matches.onChange((match, events, meta) => {
     notifyPlayers(match, meta);
+    bots.check(match);
     for (const c of clients) {
       if (!c.me || !match.players.includes(c.me.id)) continue;
       if (c.watching === match.id) pushMatch(c, match, events);
@@ -278,8 +282,10 @@ export async function startServer({ port = 8080, dataDir, inviteCode, hubName = 
   }, 25_000);
 
   await new Promise((ok) => server.listen(port, ok));
+  bots.scanAll(); // parties contre un robot interrompues par un redémarrage
   const close = async () => {
     clearInterval(heartbeat);
+    bots.closed = true;
     for (const ws of wss.clients) ws.terminate();
     await new Promise((ok) => server.close(ok));
     store.flush();

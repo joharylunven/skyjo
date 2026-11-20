@@ -356,8 +356,10 @@ function createSheet() {
 
 function newMatchSheet(sheet) {
   const { game, options } = sheet;
-  const others = state.hub.profiles.filter((p) => p.id !== state.me.id);
-  sheet.opponent ??= others.length === 1 ? others[0].id : null;
+  const humans = state.hub.profiles.filter((p) => p.id !== state.me.id);
+  const bots = game.bots ?? [];
+  const others = [...humans, ...bots];
+  sheet.opponent ??= humans.length === 1 ? humans[0].id : others.length === 1 ? others[0].id : null;
   const optionFields = (game.options ?? []).map((o) => {
     if (o.type === 'select') {
       return h(
@@ -426,12 +428,13 @@ function newMatchSheet(sheet) {
                   },
                 },
                 avatar(p),
-                p.name,
+                p.bot ? h('span.bot-name', {}, h('span', {}, p.name), h('small', {}, p.blurb)) : p.name,
               ),
             ),
           ),
         )
       : h('p.notice', {}, 'Personne d’autre n’a encore de profil : envoie le lien et le code d’invitation à ton adversaire.'),
+    bots.length && !humans.length ? h('p.small', {}, 'En attendant un adversaire en chair et en os, défie un robot !') : null,
     ...optionFields,
     h('button.primary.big', { disabled: state.busy || !others.length, onClick: go }, 'Lancer la partie'),
   ]);

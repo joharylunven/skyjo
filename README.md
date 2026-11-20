@@ -76,6 +76,12 @@ papillons comètes) et le drapeau malgache sur chaque trou :
   balle ramassée au bout de 6 coups (compte 7). Le meilleur du trou commence le suivant ; le plus
   petit total gagne.
 - **Parcours** : grand tour (8 trous), balade (4 au hasard) ou express (2 au hasard).
+- **Contre un robot** : dans « Adversaire », choisir **Rakoto 🤖** (bon joueur, environ 19 coups sur
+  le grand tour pour un par de 24, avec de vraies erreurs) ou **Rakoto Champion 👑** (environ 14,
+  presque imbattable). Le robot essaie des milliers de coups avec le même simulateur que l'arbitre,
+  préfère ceux qui marchent encore s'il les joue un peu de travers, puis tire avec une main qui
+  tremble un peu (`server/golf-ai.js`, calcul dans un thread à part). Ses parties comptent dans les
+  scores, face à face avec « Rakoto ».
 - Le serveur simule chaque coup (`public/minigolf/engine.js`) et envoie la trajectoire, que les deux
   téléphones rejouent. Un test vérifie que chaque trou se finit en au plus son par avec un coup
   parfait (`tests/golf-solver.js`). Ajouter un trou : `public/minigolf/courses.js`.

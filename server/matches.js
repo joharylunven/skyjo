@@ -55,6 +55,7 @@ export class Matches {
     if (!game) throw new MatchError(400, 'unknown_game', 'Jeu inconnu.');
     const other = this.auth.getProfile(opponent);
     if (!other || other.id === creatorId) throw new MatchError(400, 'bad_opponent', 'Choisissez un adversaire.');
+    if (other.bot && other.game !== game.id) throw new MatchError(400, 'bad_opponent', 'Ce robot ne joue pas à ce jeu.');
     const players = [creatorId, other.id].map((id) => ({ id, name: this.auth.getProfile(id).name }));
     const clean = game.cleanOptions ? game.cleanOptions(options) : options ?? {};
     const match = {

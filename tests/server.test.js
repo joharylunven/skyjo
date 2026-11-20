@@ -274,3 +274,38 @@ test('notifications : envoyées au joueur dont c’est le tour, pas à celui qui
   await srv.close();
   rmSync(dir2, { recursive: true, force: true });
 });
+
+test('robot de minigolf : proposé dans l’accueil, joue tout seul jusqu’au bout', async () => {
+  const dir3 = mkdtempSync(join(tmpdir(), 'arcade-bot-'));
+  const srv = await startServer({ port: 0, dataDir: dir3, inviteCode: INVITE, botDelay: 0 });
+  const url = `http://localhost:${srv.port}`;
+  const me = await (await fetch(url + '/api/profiles', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Zoé', pin: '1234', invite: INVITE }) })).json();
+  const auth = { 'Content-Type': 'application/json', Authorization: `Bearer ${me.token}` };
+  const hub = await (await fetch(url + '/api/hub')).json();
+  assert.deepEqual(hub.profiles.map((p) => p.name), ['Zoé']); // pas de robot sur l'écran de connexion
+  const golf = hub.games.find((g) => g.id === 'minigolf');
+  assert.equal(golf.bots[0].id, 'bot-rakoto');
+  assert.deepEqual(hub.games.find((g) => g.id === 'skyjojo').bots, []);
+  // personne ne peut se connecter en robot, ni l'inviter à un autre jeu
+  assert.equal((await fetch(url + '/api/login', { method: 'POST', headers: auth, body: JSON.stringify({ profileId: 'bot-rakoto', pin: '0000' }) })).status, 401);
+  assert.equal((await fetch(url + '/api/matches', { method: 'POST', headers: auth, body: JSON.stringify({ game: 'skyjojo', opponent: 'bot-rakoto' }) })).status, 400);
+
+  const m = await (await fetch(url + '/api/matches', { method: 'POST', headers: auth, body: JSON.stringify({ game: 'minigolf', opponent: 'bot-rakoto', options: { parcours: 'express' } }) })).json();
+  const deadline = Date.now() + 60_000;
+  let match = srv.matches.get(m.id);
+  while (match.status === 'active' && Date.now() < deadline) {
+    const s = match.state;
+    if (s.players[s.turn].id === me.profile.id) srv.matches.act(m.id, me.profile.id, { type: 'shot', angle: 0, power: 0.03 });
+    await new Promise((r) => setTimeout(r, 50));
+    match = srv.matches.get(m.id);
+  }
+  assert.equal(match.status, 'finished');
+  const bot = match.state.players.find((p) => p.id === 'bot-rakoto');
+  // le robot joue bien : il bat largement quelqu'un qui tapote (7 par trou)
+  assert.ok(bot.scores.reduce((x, y) => x + y, 0) < 14, `scores du robot : ${bot.scores}`);
+  assert.deepEqual(match.result.winners, ['bot-rakoto']);
+  const stats = await (await fetch(url + '/api/stats', { headers: auth })).json();
+  assert.equal(stats.rivals[0].opponent.name, 'Rakoto');
+  await srv.close();
+  rmSync(dir3, { recursive: true, force: true });
+});

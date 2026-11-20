@@ -282,7 +282,7 @@ function statusText() {
   if (app.aim) return app.aim.power < 0.04 ? 'Tire en arrière…' : `Puissance ${Math.round(app.aim.power * 100)} % · relâche pour jouer`;
   if (app.pending) return 'Coup envoyé…';
   if (myTurn()) return 'À toi ! Tire en arrière avec le doigt, relâche pour jouer.';
-  return `${playerName(v.turn)} joue…`;
+  return app.summary?.opponent?.bot ? `${playerName(v.turn)} réfléchit… 🤖` : `${playerName(v.turn)} joue…`;
 }
 
 // ---------------------------------------------------------------------------- feuilles
@@ -403,7 +403,7 @@ function render() {
   document.body.dataset.screen = 'game';
   document.body.dataset.game = 'golf';
   const opp = app.summary?.opponent;
-  const here = opp && app.online.includes(opp.id);
+  const here = opp && (opp.bot || app.online.includes(opp.id)); // un robot est toujours là
   const shownHole = app.anim ? app.anim.shot.hole : view.hole;
   const hole = holeById(view.holes[Math.min(shownHole, view.holes.length - 1)]);
   const topbar = h(
