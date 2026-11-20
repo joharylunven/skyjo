@@ -39,7 +39,7 @@ doublé. Partie terminée au seuil choisi (100 par défaut) : le plus petit tota
 ## Bataille navale
 
 Chacun place sa flotte en secret (bouton « Mélanger » pour un placement au hasard ; toucher un navire
-pour le choisir, une case pour le déplacer, le navire à nouveau pour le pivoter). Les navires ne se
+au doigt pour le déplacer, le toucher deux fois pour le pivoter). Les navires ne se
 touchent pas, même en diagonale. On tire ensuite à tour de rôle : toucher une case pour viser, la
 toucher encore (ou « Feu ! ») pour tirer. Dans l'eau, touché, coulé ; l'eau autour d'un navire coulé
 est grisée. Le premier qui coule toute la flotte adverse gagne.

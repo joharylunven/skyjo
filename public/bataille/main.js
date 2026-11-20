@@ -178,6 +178,7 @@ function grid({ size, fleet, ships = [], shots = [], onTap, cellClass, labels = 
           class: extra.cls ?? '',
           disabled: !onTap || extra.disabled,
           'aria-label': cellName(x, y),
+          dataset: { x, y },
           style: { gridColumn: x + 1 + o, gridRow: y + 1 + o },
           onClick: onTap ? () => onTap(x, y) : null,
         }),
@@ -187,6 +188,7 @@ function grid({ size, fleet, ships = [], shots = [], onTap, cellClass, labels = 
     const len = fleet.find((f) => f.id === s.id).len;
     items.push(
       h('div.ship', {
+        dataset: { id: s.id },
         class: [s.dir, selected === s.id ? 'selected' : '', sunk.includes(s.id) ? 'sunk' : ''].join(' '),
         style: {
           '--c': COLORS[s.id] ?? '#8b919c',
@@ -277,6 +279,7 @@ function rotateSelected(view) {
 }
 
 function onPlacementTap(view, x, y) {
+  if (Date.now() < dragEndedAt + 350) return; // le clic qui suit un glisser
   const hit = shipAt(app.draft, view.fleet, x, y);
   if (hit) {
     if (hit.id === app.selected) return rotateSelected(view);
@@ -286,6 +289,66 @@ function onPlacementTap(view, x, y) {
   const s = app.draft.find((v) => v.id === app.selected);
   if (!tryPlace(view, { ...s, x, y })) toast('Trop près d’un autre navire.', 'error');
   render();
+}
+
+// Glisser-déposer : on saisit un navire (doigt ou souris) et on le lâche sur sa nouvelle place.
+// Pendant le geste, seul l'élément du navire bouge (pas de nouveau rendu, qui casserait le geste).
+let dragEndedAt = 0;
+
+function enableDrag(g, view) {
+  let drag = null;
+  // case la plus proche du doigt (les interstices entre cases comptent aussi)
+  const cellAt = (e) => {
+    let best = null;
+    let bestD = Infinity;
+    for (const el of g.querySelectorAll('.cell')) {
+      const r = el.getBoundingClientRect();
+      const d = Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2));
+      if (d < bestD) [best, bestD] = [{ x: Number(el.dataset.x), y: Number(el.dataset.y), size: r.width }, d];
+    }
+    return best && bestD < best.size ? best : null;
+  };
+  g.addEventListener('pointerdown', (e) => {
+    if (e.button > 0) return;
+    const c = cellAt(e);
+    const ship = c && shipAt(app.draft, view.fleet, c.x, c.y);
+    if (!ship) return;
+    drag = { ship, dx: c.x - ship.x, dy: c.y - ship.y, start: c, moved: false, candidate: null, el: g.querySelector(`.ship[data-id="${ship.id}"]`) };
+  });
+  g.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    e.preventDefault();
+    const c = cellAt(e);
+    if (!c || (!drag.moved && c.x === drag.start.x && c.y === drag.start.y)) return;
+    drag.moved = true;
+    const { ship } = drag;
+    const len = view.fleet.find((f) => f.id === ship.id).len;
+    const x = Math.max(0, Math.min(c.x - drag.dx, view.size - (ship.dir === 'h' ? len : 1)));
+    const y = Math.max(0, Math.min(c.y - drag.dy, view.size - (ship.dir === 'v' ? len : 1)));
+    const cand = { ...ship, x, y };
+    const ok = !validateFleet(app.draft.map((v) => (v.id === ship.id ? cand : v)), view.size, view.fleet);
+    drag.candidate = ok ? cand : null;
+    drag.el.classList.add('dragging');
+    drag.el.classList.toggle('invalid', !ok);
+    drag.el.style.gridColumn = ship.dir === 'h' ? `${x + 2} / span ${len}` : `${x + 2}`;
+    drag.el.style.gridRow = ship.dir === 'v' ? `${y + 2} / span ${len}` : `${y + 2}`;
+  });
+  const end = () => {
+    if (!drag) return;
+    const d = drag;
+    drag = null;
+    if (!d.moved) return; // simple toucher : géré par le clic (choisir / pivoter)
+    dragEndedAt = Date.now();
+    if (d.candidate) {
+      app.draft = app.draft.map((v) => (v.id === d.ship.id ? d.candidate : v));
+      saveDraft();
+    } else toast('Trop près d’un autre navire.', 'error');
+    app.selected = d.ship.id;
+    render();
+  };
+  g.addEventListener('pointerup', end);
+  g.addEventListener('pointercancel', end);
+  return g;
 }
 
 function placementScreen(view) {
@@ -304,20 +367,23 @@ function placementScreen(view) {
       'div.status.mine',
       {},
       h('strong', {}, 'Placez votre flotte'),
-      h('small', {}, app.selected ? `${shipName(app.selected)} : touchez une case pour le déplacer, ou le navire pour le pivoter.` : 'Touchez un navire pour le déplacer. Les navires ne doivent pas se toucher.'),
+      h('small', {}, 'Faites glisser un navire pour le déplacer, touchez-le deux fois pour le pivoter. Les navires ne doivent pas se toucher.'),
     ),
     h(
       'section.board',
       {},
-      grid({
-        size: view.size,
-        fleet: view.fleet,
-        ships: app.draft,
-        selected: app.selected,
-        labels: true,
-        cls: 'big placing',
-        onTap: (x, y) => onPlacementTap(view, x, y),
-      }),
+      enableDrag(
+        grid({
+          size: view.size,
+          fleet: view.fleet,
+          ships: app.draft,
+          selected: app.selected,
+          labels: true,
+          cls: 'big placing',
+          onTap: (x, y) => onPlacementTap(view, x, y),
+        }),
+        view,
+      ),
     ),
     h(
       'div.actions',
