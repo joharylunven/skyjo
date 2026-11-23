@@ -33,7 +33,7 @@ test('manifest : application installable sur l’écran d’accueil', () => {
 });
 
 test('pages : icône iPhone et manifest déclarés', () => {
-  for (const page of ['index.html', 'skyjojo/index.html', 'bataille/index.html', 'minigolf/index.html']) {
+  for (const page of ['index.html', 'skyjojo/index.html', 'bataille/index.html', 'minigolf/index.html', 'petanque/index.html']) {
     const html = read(page);
     assert.match(html, /apple-touch-icon/);
     assert.match(html, /rel="manifest"/);

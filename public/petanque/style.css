@@ -1,0 +1,294 @@
+/* Pétanque à Quiberon : bleu marine, blanc marinière, caramel et chocolat. */
+
+body[data-game='petanque'] {
+  --pq-navy: #1f3b73;
+  --pq-caramel: #e0a145;
+  --pq-choco: #5a3520;
+  --pq-red: #e1262d;
+  background-image: repeating-linear-gradient(0deg, rgb(255 255 255 / 0.025) 0 10px, transparent 10px 20px), radial-gradient(circle at 50% -10%, rgb(43 179 192 / 0.2), transparent 60%);
+}
+
+.pq {
+  height: 100dvh;
+  gap: 7px;
+  padding: calc(10px + var(--safe-top)) 10px calc(10px + var(--safe-bottom));
+  overflow: hidden;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.topbar .title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.avatar {
+  position: relative;
+  font-size: 1.5rem;
+}
+.presence {
+  position: absolute;
+  right: -3px;
+  bottom: 1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #4a4e57;
+  box-shadow: 0 0 0 2px var(--bg);
+}
+.presence.on {
+  background: var(--ok);
+}
+.who {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  min-width: 0;
+}
+.who small {
+  color: #7fd0da;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* tableau des scores */
+.pq-score {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+.pq-side {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  min-width: 0;
+}
+.pq-side.cara {
+  align-items: flex-end;
+  text-align: right;
+}
+.pq-side.turn {
+  border-color: var(--pq-caramel);
+  box-shadow: 0 0 0 1px rgb(224 161 69 / 0.3);
+}
+.pq-name {
+  font-weight: 700;
+  font-size: 0.86rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.pq-boules {
+  display: flex;
+  gap: 4px;
+}
+.pq-boules i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.choco .pq-boules i {
+  background: radial-gradient(circle at 35% 35%, #9a6a4a, var(--pq-choco) 55%, #2e1a0f);
+}
+.cara .pq-boules i {
+  background: radial-gradient(circle at 35% 35%, #fff0c4, var(--pq-caramel) 55%, #a8661e);
+}
+.pq-boules i.used {
+  opacity: 0.2;
+}
+.pq-points {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.pq-points b {
+  font-size: 1.7rem;
+  font-weight: 800;
+}
+.pq-points span {
+  color: var(--ink-dim);
+}
+
+.pq-status {
+  text-align: center;
+  padding: 7px 10px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-size: 0.9rem;
+}
+.pq-status.mine {
+  border-color: var(--pq-caramel);
+}
+
+.stage {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+}
+canvas.course {
+  display: block;
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 2px rgb(0 0 0 / 0.4),
+    0 14px 34px rgb(0 0 0 / 0.5);
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.pq-modes {
+  display: flex;
+  gap: 8px;
+}
+.pq-modes button {
+  flex: 1;
+  min-height: 44px;
+}
+.pq-modes button.on {
+  background: #fbfaf5;
+  color: var(--pq-navy);
+  border-color: transparent;
+}
+
+.pq-final {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+}
+.pq-final strong {
+  font-size: 2rem;
+}
+
+/* cartons */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 22;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 0.3);
+  animation: fade 0.25s;
+}
+.intro-card {
+  position: relative;
+  overflow: hidden;
+  min-width: 250px;
+  text-align: center;
+  padding: 18px 26px 22px;
+  border-radius: 18px;
+  background: #fbfaf5;
+  color: #1d1b18;
+  box-shadow: 0 18px 40px rgb(0 0 0 / 0.5);
+  animation: introIn 0.5s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.intro-card small {
+  color: #6a7a90;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.intro-card h2 {
+  margin: 4px 0 2px;
+  font-size: 1.5rem;
+}
+.intro-card p {
+  margin: 0;
+  color: #4a5060;
+}
+/* marinière */
+.intro-flag {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 10px;
+  background: repeating-linear-gradient(180deg, var(--pq-navy) 0 2px, #fbfaf5 2px 4px);
+}
+@keyframes introIn {
+  from {
+    transform: translateY(30px) scale(0.85);
+    opacity: 0;
+  }
+}
+
+/* annonces */
+.pq-flash {
+  position: fixed;
+  left: 50%;
+  top: 30%;
+  transform: translate(-50%, -50%);
+  z-index: 25;
+  pointer-events: none;
+  padding: 12px 20px;
+  border-radius: 14px;
+  font-weight: 800;
+  font-size: 1.05rem;
+  white-space: nowrap;
+  max-width: 94vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 0.5);
+  animation: pqFlash 2.3s ease-out forwards;
+}
+.pq-flash.great {
+  background: var(--pq-caramel);
+  color: #2a1a08;
+  border-color: transparent;
+  font-size: 1.2rem;
+}
+.pq-flash.good {
+  background: var(--pq-navy);
+  color: #fff;
+  border-color: transparent;
+}
+.pq-flash.bad {
+  border-color: var(--pq-red);
+}
+@keyframes pqFlash {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -30%) scale(0.85);
+  }
+  10%,
+  80% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -65%);
+  }
+}
+
+.floating {
+  position: fixed;
+  left: 50%;
+  bottom: calc(18px + var(--safe-bottom));
+  transform: translateX(-50%);
+  z-index: 15;
+}
+.fatal {
+  text-align: center;
+  justify-content: center;
+  min-height: 100dvh;
+}

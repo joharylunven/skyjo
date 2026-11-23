@@ -237,7 +237,9 @@ const canShoot = () => myTurn() && !app.anim && !app.pending && app.status === '
 
 canvas.addEventListener('pointerdown', (e) => {
   if (!canShoot()) return;
-  canvas.setPointerCapture?.(e.pointerId);
+  try {
+    canvas.setPointerCapture(e.pointerId);
+  } catch {}
   app.aim = { start: course.toCourse(e.clientX, e.clientY), angle: -Math.PI / 2, power: 0 };
   updateAimHint();
 });

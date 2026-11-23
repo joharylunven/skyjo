@@ -6,6 +6,7 @@ import { Worker } from 'node:worker_threads';
 export const BOTS = [
   { id: 'bot-rakoto', name: 'Rakoto', avatar: '🤖', game: 'minigolf', level: 'bon', blurb: 'Bon joueur, sûr au putt' },
   { id: 'bot-rakoto-champion', name: 'Rakoto Champion', avatar: '👑', game: 'minigolf', level: 'champion', blurb: 'Presque imbattable' },
+  { id: 'bot-soizic', name: 'Mamie Soizic', avatar: '👵', game: 'petanque', level: 'bon', blurb: 'Pointeuse redoutable de Port Maria' },
 ];
 
 export const botInfo = (b) => ({ id: b.id, name: b.name, avatar: b.avatar, blurb: b.blurb, bot: true });
@@ -21,9 +22,9 @@ export function ensureBotProfiles(store) {
   store.save();
 }
 
-function golfShot(data) {
+function botMove(data) {
   return new Promise((ok, ko) => {
-    const w = new Worker(new URL('./golf-worker.js', import.meta.url), { workerData: data });
+    const w = new Worker(new URL('./bot-worker.js', import.meta.url), { workerData: data });
     w.once('message', ok);
     w.once('error', ko);
     w.once('exit', (code) => code && ko(new Error(`robot : fin anormale (${code})`)));
@@ -54,16 +55,21 @@ export class BotRunner {
     try {
       const m0 = this.matches.get(matchId);
       // laisser le temps de voir rouler la balle d'avant, puis « réfléchir »
-      const replay = m0.state.lastShot ? (m0.state.lastShot.path.length / 30) * 1000 : 0;
+      const last = m0.state.lastShot?.path ?? m0.state.lastThrow?.frames;
+      const replay = last ? (last.length / 30) * 1000 : 0;
       await new Promise((r) => setTimeout(r, this.delay ? replay + this.delay : 0));
       const m = this.matches.get(matchId);
       if (this.closed || !m || m.status !== 'active' || !this.matches.awaiting(m).includes(bot.id)) return;
       const s = m.state;
       const me = s.players.findIndex((p) => p.id === bot.id);
-      const action = await golfShot({ holeId: s.holes[s.hole], from: s.players[me].ball, shots: s.shots, level: bot.level });
+      const action =
+        bot.game === 'petanque'
+          ? await botMove({ game: 'petanque', state: s, level: bot.level })
+          : await botMove({ game: 'minigolf', holeId: s.holes[s.hole], from: s.players[me].ball, shots: s.shots, level: bot.level });
       if (this.closed) return;
       this.busy.delete(matchId);
-      this.matches.act(matchId, bot.id, { type: 'shot', angle: action.angle, power: action.power });
+      const { expected, ...move } = action;
+      this.matches.act(matchId, bot.id, bot.game === 'petanque' ? move : { type: 'shot', angle: move.angle, power: move.power });
     } catch (e) {
       console.warn('Robot :', e.message);
     } finally {

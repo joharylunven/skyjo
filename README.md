@@ -1,7 +1,8 @@
 # Jojo Arcade
 
 Salle de jeux **à deux, à distance**, auto-hébergée sur un homelab. Jeux : **Skyjojo** (le jeu
-des 12 cartes), **Sushi maritime** (la bataille navale aux sushis) et le **Minigolf** malgache. Chacun l'installe sur son iPhone comme une appli, choisit son jeu dans le
+des 12 cartes), **Sushi maritime** (la bataille navale aux sushis), le **Minigolf** malgache et la **Pétanque à
+Quiberon**. Chacun l'installe sur son iPhone comme une appli, choisit son jeu dans le
 menu, et les scores, victoires et historiques sont conservés sur le serveur.
 
 ## Comment ça marche
@@ -85,6 +86,31 @@ papillons comètes) et le drapeau malgache sur chaque trou :
 - Le serveur simule chaque coup (`public/minigolf/engine.js`) et envoie la trajectoire, que les deux
   téléphones rejouent. Un test vérifie que chaque trou se finit en au plus son par avec un coup
   parfait (`tests/golf-solver.js`). Ajouter un trou : `public/minigolf/courses.js`.
+
+## Pétanque à Quiberon 🍬
+
+Boules en **chocolat** contre boules en **caramel**, et un cochonnet bonbon au caramel beurre salé.
+Tête-à-tête, 3 boules chacun, partie en 13 (ou 7) points, sur quatre terrains de Quiberon :
+
+| Terrain | Sol | Pièges |
+|---------|-----|--------|
+| La Grande Plage | sable (sable mouillé : roule mieux) | château de sable, seau |
+| Le quai de Port Maria | pavés (ça roule loin) | casier à homards, bittes d’amarrage, flaque (boule noyée) |
+| La Côte Sauvage | sable | galets et algues qui freinent, rochers |
+| Les pontons de Port Haliguen | planches | annexe de bateau, table de crêperie, carré de sable |
+
+- **Lancer** : poser le doigt, tirer en arrière, relâcher. La croix montre où la boule retombe, le
+  rond où elle devrait s’arrêter. **🎯 Pointer** (elle vole puis roule) ou **💥 Tirer** (elle frappe
+  fort : carreau si elle prend la place de la boule visée).
+- Règles de la pétanque : le lanceur du cochonnet joue la première boule, puis joue toujours celui
+  qui n’a pas le point ; une boule hors du terrain est morte ; le gagnant de la mène marque une
+  boule par boule mieux placée que la meilleure adverse et relance le cochonnet. Le sable dévie
+  très légèrement chaque lancer (tiré au sort par le serveur).
+- Annonces : biberon 🍼, carreau 💥, casquette 🧢, Fanny 💋… Décor animé : goélands qui picorent et
+  s’envolent, baigneur en marinière qui prend des coups de soleil, cerf-volant, drapeau breton,
+  voiliers, chalutier, phare de Port Maria, stands de caramels, crêpes et chocolats.
+- Contre un robot : **Mamie Soizic 👵**, pointeuse redoutable qui sait aussi tirer
+  (`server/petanque-ai.js`).
 
 ## Notifications « à toi de jouer »
 
