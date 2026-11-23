@@ -110,3 +110,31 @@ test('13 : le retourner aussi déclenche le coup d’œil ; pas de coup d’œil
   t = act(t, { type: 'flip', index: 0 }, 'p0');
   assert.equal(t.addonState['coup-oeil'].pending[0], 1);
 });
+
+test('13 : pas de coup d’œil (ni de blocage) quand toutes les cartes cachées sont déjà connues', () => {
+  let s = toPlay(defaultGame(), 0);
+  // deux cartes cachées (index 0 et 1), déjà regardées toutes les deux
+  setGrid(s, 0, [4, 5, 2, 3, 0, 2, 3, 1, 4, 3, 1, 2], [false, false, ...Array(10).fill(true)]);
+  s.addonState['coup-oeil'].pending[0] = 2;
+  s = act(s, { type: 'coup-oeil:look', index: 0 }, 'p0');
+  assert.equal(applyAction(s, { type: 'coup-oeil:look', index: 0 }, 'p0').error.code !== undefined, true); // déjà connue
+  s = act(s, { type: 'coup-oeil:look', index: 1 }, 'p0');
+  assert.equal(viewFor(s, 'p0').addonState['coup-oeil'].pending, 0);
+
+  // on pioche un 13 et on le pose à la place d'une carte visible : rien à regarder, la partie continue
+  s.deck.push({ id: 5000, kind: 'number', value: 13 });
+  s = act(s, { type: 'drawDeck' }, 'p0');
+  s = act(s, { type: 'swap', index: 5 }, 'p0');
+  assert.equal(s.addonState['coup-oeil'].pending[0], 0);
+  assert.equal(viewFor(s, 'p0').addonState['coup-oeil'].pending, 0);
+  assert.equal(s.turn, 1);
+
+  // un coup d'œil en attente devient caduc si la dernière carte inconnue est retournée entre-temps
+  let t = toPlay(defaultGame(), 0);
+  setGrid(t, 0, [4, 5, 2, 3, 0, 2, 3, 1, 4, 3, 1, 2], [false, ...Array(11).fill(true)]);
+  t.addonState['coup-oeil'].pending[0] = 1;
+  t = act(t, { type: 'drawDeck' }, 'p0');
+  t = act(t, { type: 'discardDrawn' }, 'p0');
+  t = act(t, { type: 'flip', index: 0 }, 'p0');
+  assert.equal(viewFor(t, 'p0').addonState['coup-oeil'].pending, 0);
+});

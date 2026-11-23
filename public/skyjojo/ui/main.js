@@ -113,6 +113,13 @@ function banner() {
   return h('div.banner', { class: s.status === 'closed' ? 'error' : 'warn', role: 'alert' }, h('span', {}, s.notice), s.status === 'closed' ? h('button.small', { onClick: goHome }, 'Accueil') : null);
 }
 
+/** Une action « auto » n'a de sens que s'il existe au moins une carte à toucher (sinon on bloquerait). */
+function hasTarget(view, def) {
+  const step = def.picks?.[0];
+  if (!step) return true;
+  return view.players.some((pl, owner) => pl.grid.some((slot, index) => step.filter({ slot, owner, index, view, picks: [] })));
+}
+
 function render(events = null) {
   const { cfg, session } = app;
   const view = session.view;
@@ -123,7 +130,7 @@ function render(events = null) {
   document.body.dataset.screen = 'game';
   // Actions d'add-on « auto » (ex. coup d'œil du 13) : le mode sélection s'ouvre tout seul.
   const playing = session.summary?.status === 'active';
-  const auto = playing ? addonActions(view, cfg.modules).find((d) => d.auto) : null;
+  const auto = playing ? addonActions(view, cfg.modules).find((d) => d.auto && hasTarget(view, d)) : null;
   if (auto && !app.ui.picking && !app.ui.pending) app.ui.picking = { def: auto, picks: [] };
   if (app.ui.picking?.def.auto && !auto) app.ui.picking = null;
 

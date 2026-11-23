@@ -4,8 +4,31 @@
 
 const isTrigger = (card, options) => card.kind === 'number' && card.value === (options.value ?? 13);
 
+/** Coups d'œil déjà faits et toujours valables (carte encore cachée, pas remplacée). */
+function knownOf(state, store, p) {
+  const grid = state.players[p].grid;
+  return (store.known?.[p] ?? []).filter((k) => grid[k.index] && !grid[k.index].up && grid[k.index].card.id === k.id);
+}
+
+/** Cartes cachées qu'on ne connaît pas encore : s'il n'y en a plus, un coup d'œil ne sert à rien. */
+function unknownHidden(state, store, p) {
+  const known = knownOf(state, store, p);
+  return state.players[p].grid.filter((slot, i) => slot && !slot.up && !known.some((k) => k.index === i)).length;
+}
+
+/** Coups d'œil réellement utilisables (jamais plus que de cartes à découvrir). */
+const usable = (state, store, p) => Math.min(store.pending?.[p] ?? 0, unknownHidden(state, store, p));
+
 function grant(state, ctx, p) {
-  if (state.players[p].grid.some((slot) => slot && !slot.up)) ctx.store.pending[p] += 1;
+  if (unknownHidden(state, ctx.store, p) > ctx.store.pending[p]) ctx.store.pending[p] += 1;
+}
+
+/** Remet les compteurs d'équerre : plus de coup d'œil en attente qu'il n'y a de cartes inconnues. */
+function tidy(state, store) {
+  state.players.forEach((_, p) => {
+    store.known[p] = knownOf(state, store, p);
+    store.pending[p] = usable(state, store, p);
+  });
 }
 
 function init(state, store) {
@@ -26,11 +49,13 @@ export default {
 
   onSwap(state, ctx) {
     init(state, ctx.store);
+    tidy(state, ctx.store);
     if (isTrigger(ctx.card, ctx.options)) grant(state, ctx, ctx.player);
   },
 
   onReveal(state, ctx) {
     init(state, ctx.store);
+    tidy(state, ctx.store);
     if (isTrigger(ctx.card, ctx.options)) grant(state, ctx, ctx.player);
   },
 
@@ -40,15 +65,17 @@ export default {
       requireTurn: false,
       validate(state, action, ctx) {
         init(state, ctx.store);
-        if (!(ctx.store.pending[ctx.player] > 0)) return 'Aucun coup d’œil disponible.';
+        if (!(usable(state, ctx.store, ctx.player) > 0)) return 'Aucun coup d’œil disponible.';
         const slot = state.players[ctx.player].grid[action.index];
         if (!Number.isInteger(action.index) || !slot || slot.up) return 'Choisissez une de vos cartes cachées.';
+        if (knownOf(state, ctx.store, ctx.player).some((k) => k.index === action.index)) return 'Vous connaissez déjà cette carte : choisissez-en une autre.';
         return null;
       },
       apply(state, action, ctx) {
         ctx.store.pending[ctx.player] -= 1;
         const card = state.players[ctx.player].grid[action.index].card;
         ctx.store.known[ctx.player].push({ index: action.index, id: card.id });
+        tidy(state, ctx.store);
         ctx.log({ t: 'coup-oeil:look', p: ctx.player });
       },
     },
@@ -59,10 +86,8 @@ export default {
     const p = state.players.findIndex((pl) => pl.id === playerId);
     if (p < 0) return { pending: 0, known: [] };
     const grid = state.players[p].grid;
-    const known = (store.known?.[p] ?? [])
-      .filter((k) => grid[k.index] && !grid[k.index].up && grid[k.index].card.id === k.id)
-      .map((k) => ({ index: k.index, card: { ...grid[k.index].card } }));
-    return { pending: store.pending?.[p] ?? 0, known };
+    const known = knownOf(state, store, p).map((k) => ({ index: k.index, card: { ...grid[k.index].card } }));
+    return { pending: usable(state, store, p), known };
   },
 
   ui: {
